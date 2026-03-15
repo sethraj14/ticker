@@ -4,8 +4,8 @@ struct DayTimelineView: View {
     let events: [CalendarEvent]
 
     private let hourHeight: CGFloat = 50
-    private let startHour = 7
-    private let endHour = 20
+    private let startHour = 0
+    private let endHour = 24
     private let timeColumnWidth: CGFloat = 52
 
     var body: some View {
@@ -21,6 +21,7 @@ struct DayTimelineView: View {
                     height: CGFloat(endHour - startHour) * hourHeight,
                     alignment: .topLeading
                 )
+                .clipped()
             }
             .frame(maxHeight: 320)
             .onAppear {

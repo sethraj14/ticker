@@ -7,8 +7,12 @@ final class GoogleCalendarService: ObservableObject {
     @Published var isAuthenticated = false
     @Published var isLoading = false
 
-    private let clientId = "653872544759-pitve349r7bnc0icimsbc332t00paf7v.apps.googleusercontent.com"
-    private let clientSecret = "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"
+    private let clientId: String = {
+        Bundle.main.object(forInfoDictionaryKey: "GoogleClientID") as? String ?? ""
+    }()
+    private let clientSecret: String = {
+        Bundle.main.object(forInfoDictionaryKey: "GoogleClientSecret") as? String ?? ""
+    }()
     private let scopes = "https://www.googleapis.com/auth/calendar.readonly"
     private let tokenURL = "https://oauth2.googleapis.com/token"
     private let authURL = "https://accounts.google.com/o/oauth2/auth"
@@ -91,9 +95,9 @@ final class GoogleCalendarService: ObservableObject {
             return false
         }
 
-        KeychainHelper.saveString(key: accessTokenKey, value: tokenResponse.accessToken)
+        _ = KeychainHelper.saveString(key: accessTokenKey, value: tokenResponse.accessToken)
         let expiry = Date.now.addingTimeInterval(TimeInterval(tokenResponse.expiresIn))
-        KeychainHelper.saveString(key: tokenExpiryKey, value: "\(expiry.timeIntervalSince1970)")
+        _ = KeychainHelper.saveString(key: tokenExpiryKey, value: "\(expiry.timeIntervalSince1970)")
 
         return true
     }
@@ -103,7 +107,8 @@ final class GoogleCalendarService: ObservableObject {
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
 
-        let body = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? $0.value)" }
+        let allowedChars = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
+        let body = params.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: allowedChars) ?? $0.value)" }
             .joined(separator: "&")
         request.httpBody = body.data(using: .utf8)
 
@@ -117,12 +122,12 @@ final class GoogleCalendarService: ObservableObject {
     }
 
     private func saveTokens(from response: TokenResponse) {
-        KeychainHelper.saveString(key: accessTokenKey, value: response.accessToken)
+        _ = KeychainHelper.saveString(key: accessTokenKey, value: response.accessToken)
         if let refresh = response.refreshToken {
-            KeychainHelper.saveString(key: refreshTokenKey, value: refresh)
+            _ = KeychainHelper.saveString(key: refreshTokenKey, value: refresh)
         }
         let expiry = Date.now.addingTimeInterval(TimeInterval(response.expiresIn))
-        KeychainHelper.saveString(key: tokenExpiryKey, value: "\(expiry.timeIntervalSince1970)")
+        _ = KeychainHelper.saveString(key: tokenExpiryKey, value: "\(expiry.timeIntervalSince1970)")
         isAuthenticated = true
     }
 
@@ -187,6 +192,11 @@ final class GoogleCalendarService: ObservableObject {
               let endDate = parseGoogleDateTime(item.end) else {
             return nil
         }
+
+        // All-day events use "date" instead of "dateTime"
+        let isAllDay = item.start.dateTime == nil && item.start.date != nil
+        // Skip all-day events from timeline
+        guard !isAllDay else { return nil }
 
         let meetingURL = extractMeetingURL(from: item)
         let attendees = item.attendees?.compactMap { $0.displayName ?? $0.email } ?? []
