@@ -9,7 +9,11 @@ struct CalendarBarApp: App {
             PopoverView(viewModel: viewModel)
                 .frame(width: 340, height: 520)
         } label: {
-            Text(viewModel.menuBarLabel)
+            if viewModel.menuBarLabel == "No meetings" {
+                Image(systemName: "calendar")
+            } else {
+                Text(viewModel.menuBarLabel)
+            }
         }
         .menuBarExtraStyle(.window)
     }
