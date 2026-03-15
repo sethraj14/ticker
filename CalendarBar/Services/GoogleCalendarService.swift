@@ -231,7 +231,9 @@ final class GoogleCalendarService: ObservableObject {
         timeMax: String,
         timeZone: String
     ) async -> [CalendarEvent] {
-        let encodedId = calendarId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? calendarId
+        // Calendar IDs like "en.indian#holiday@group.v.calendar.google.com" need full encoding
+        let safeChars = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: ".-_~"))
+        let encodedId = calendarId.addingPercentEncoding(withAllowedCharacters: safeChars) ?? calendarId
         var components = URLComponents(string: "\(calendarBaseURL)/calendars/\(encodedId)/events")!
         components.queryItems = [
             URLQueryItem(name: "timeMin", value: timeMin),

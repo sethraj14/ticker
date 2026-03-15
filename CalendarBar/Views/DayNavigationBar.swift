@@ -7,11 +7,11 @@ struct DayNavigationBar: View {
     let onToday: () -> Void
 
     var body: some View {
-        HStack {
+        HStack(spacing: 0) {
             Button(action: onPrevious) {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 14, weight: .semibold))
-                    .frame(width: 44, height: 36)
+                    .font(.system(size: 13, weight: .semibold))
+                    .frame(width: 44, height: 30)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -28,13 +28,13 @@ struct DayNavigationBar: View {
 
             Button(action: onNext) {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
-                    .frame(width: 44, height: 36)
+                    .font(.system(size: 13, weight: .semibold))
+                    .frame(width: 44, height: 30)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 6)
-        .padding(.vertical, 4)
+        .padding(.horizontal, 2)
+        .padding(.vertical, 2)
     }
 }
