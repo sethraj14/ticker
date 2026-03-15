@@ -2,67 +2,53 @@ import SwiftUI
 
 struct MeetingBlockView: View {
     let event: CalendarEvent
-    @State private var isExpanded = false
+    let isSelected: Bool
+    let onTap: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(event.title)
-                .font(.system(size: 11, weight: .semibold))
-                .lineLimit(1)
+        HStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(event.title)
+                    .font(.system(size: 13, weight: .semibold))
+                    .lineLimit(1)
 
-            Text(event.timeRangeLabel)
-                .font(.system(size: 10))
-                .foregroundStyle(.secondary)
-
-            if isExpanded {
-                expandedDetails
+                Text(event.timeRangeLabel)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.white.opacity(0.8))
             }
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(event.calendarColor.opacity(0.15))
-        .overlay(
-            Rectangle()
-                .frame(width: 3)
-                .foregroundStyle(event.calendarColor),
-            alignment: .leading
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 4))
-        .onTapGesture {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                isExpanded.toggle()
-            }
-        }
-    }
+            .padding(.leading, 10)
 
-    @ViewBuilder
-    private var expandedDetails: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            if !event.attendees.isEmpty {
-                Label(event.attendees.joined(separator: ", "), systemImage: "person.2")
-                    .font(.system(size: 9))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-            }
+            Spacer(minLength: 4)
 
-            if let location = event.location {
-                Label(location, systemImage: "mappin")
-                    .font(.system(size: 9))
-                    .foregroundStyle(.secondary)
-            }
-
-            if let meetingURL = event.meetingURL {
+            if let url = event.meetingURL {
                 Button {
-                    NSWorkspace.shared.open(meetingURL)
+                    NSWorkspace.shared.open(url)
                 } label: {
-                    Label("Join", systemImage: "video")
-                        .font(.system(size: 10, weight: .medium))
+                    Image(systemName: "video.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.white)
+                        .frame(width: 32, height: 32)
+                        .background(.white.opacity(0.2))
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
                 .buttonStyle(.plain)
-                .foregroundStyle(event.calendarColor)
-                .padding(.top, 2)
+                .padding(.trailing, 8)
             }
+        }
+        .padding(.vertical, 4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 6)
+                .fill(event.calendarColor.opacity(isSelected ? 0.9 : 0.75))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 6)
+                .strokeBorder(.white.opacity(isSelected ? 0.4 : 0), lineWidth: 2)
+        )
+        .foregroundStyle(.white)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            onTap()
         }
     }
 }
