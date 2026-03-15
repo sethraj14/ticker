@@ -1,4 +1,4 @@
-# CalendarBar — macOS Menu Bar Calendar
+# Ticker — macOS Menu Bar Calendar
 
 ## What Is This
 Native macOS menu bar app that shows upcoming meeting countdown, Google Calendar-style day view, and join notifications. Built with SwiftUI targeting macOS 13+.
@@ -13,8 +13,8 @@ Native macOS menu bar app that shows upcoming meeting countdown, Google Calendar
 
 ## Project Structure
 ```
-CalendarBar/
-├── CalendarBarApp.swift          # @main entry, MenuBarExtra
+Ticker/
+├── TickerApp.swift          # @main entry, MenuBarExtra
 ├── Views/                        # All SwiftUI views
 ├── ViewModels/                   # CalendarViewModel
 ├── Services/                     # Google, EventKit, Notifications
@@ -36,6 +36,6 @@ CalendarBar/
 
 ## Build & Run
 ```bash
-open CalendarBar.xcodeproj
+open Ticker.xcodeproj
 # Cmd+R to build and run
 ```

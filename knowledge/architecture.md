@@ -1,4 +1,4 @@
-# CalendarBar Architecture
+# Ticker Architecture
 
 ## Overview
 Native macOS menu bar calendar app built with SwiftUI. Shows upcoming meeting countdown in menu bar, Google Calendar-style day view in popup, and native notifications with join buttons.
@@ -14,7 +14,7 @@ Native macOS menu bar calendar app built with SwiftUI. Shows upcoming meeting co
 
 ## Key Components
 
-### CalendarBarApp.swift
+### TickerApp.swift
 Entry point. Uses `MenuBarExtra` scene with dynamic label text from `CalendarViewModel`. Style is `.window` for custom popup panel.
 
 ### CalendarViewModel

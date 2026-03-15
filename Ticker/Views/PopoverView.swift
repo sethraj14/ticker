@@ -86,7 +86,7 @@ struct PopoverView: View {
                 .font(.system(size: 44))
                 .foregroundStyle(.blue)
 
-            Text("CalendarBar")
+            Text("Ticker")
                 .font(.system(size: 20, weight: .semibold))
 
             Text("Connect your Google Calendar\nto see upcoming meetings.")

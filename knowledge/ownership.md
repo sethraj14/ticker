@@ -1,4 +1,4 @@
-# CalendarBar Ownership
+# Ticker Ownership
 
 ## Critical Modules
 | Module | Risk | Why |
