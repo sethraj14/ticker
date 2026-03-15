@@ -14,6 +14,7 @@
 		17C93F0092464EE829BF3F15 /* JoinSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3692C6B09BF1A94511DA4034 /* JoinSection.swift */; };
 		1E0D49BC729EB73F7D092314 /* LoopbackHTTPServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9371C35FFE2E6FE9EDF2174C /* LoopbackHTTPServer.swift */; };
 		335F226422B2ED6D962883D7 /* CalendarViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89BE48C9421C593AAE257A11 /* CalendarViewModel.swift */; };
+		38B64475A18F81F214EE94DF /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E174D8B4D320A2D395436B1C /* NotificationService.swift */; };
 		3E5653510796A6D096D6772C /* MeetingBlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE0B956A594CC044A65CB097 /* MeetingBlockView.swift */; };
 		413E893F6505535F37680AEB /* DayTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 287E4B07BBC0CA65BBB205F5 /* DayTimelineView.swift */; };
 		47F0C1F5627CC9DEC6031618 /* CalendarBarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96E51E6413F7F6C61097E226 /* CalendarBarApp.swift */; };
@@ -36,6 +37,7 @@
 		9371C35FFE2E6FE9EDF2174C /* LoopbackHTTPServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopbackHTTPServer.swift; sourceTree = "<group>"; };
 		96E51E6413F7F6C61097E226 /* CalendarBarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarBarApp.swift; sourceTree = "<group>"; };
 		9BFE29C4F44107F7D46EF5D2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		E174D8B4D320A2D395436B1C /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		EE0B956A594CC044A65CB097 /* MeetingBlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingBlockView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -89,6 +91,7 @@
 			children = (
 				5945EEF520B5135A5F617C21 /* GoogleCalendarService.swift */,
 				9371C35FFE2E6FE9EDF2174C /* LoopbackHTTPServer.swift */,
+				E174D8B4D320A2D395436B1C /* NotificationService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -194,6 +197,7 @@
 				019901246CA9F61FE2883781 /* KeychainHelper.swift in Sources */,
 				1E0D49BC729EB73F7D092314 /* LoopbackHTTPServer.swift in Sources */,
 				3E5653510796A6D096D6772C /* MeetingBlockView.swift in Sources */,
+				38B64475A18F81F214EE94DF /* NotificationService.swift in Sources */,
 				0118ADA267A9F7BD73A6B483 /* PopoverView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
