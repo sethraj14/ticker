@@ -1,0 +1,33 @@
+name: CalendarBar
+options:
+  bundleIdPrefix: com.rajdeepgupta
+  deploymentTarget:
+    macOS: "13.0"
+  xcodeVersion: "16.0"
+  minimumXcodeGenVersion: "2.40.0"
+
+targets:
+  CalendarBar:
+    type: application
+    platform: macOS
+    sources:
+      - CalendarBar
+    info:
+      path: CalendarBar/Info.plist
+      properties:
+        LSUIElement: true
+        NSCalendarsFullAccessUsageDescription: "CalendarBar needs access to your calendars to display upcoming meetings."
+        CFBundleDisplayName: CalendarBar
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+    entitlements:
+      path: CalendarBar/CalendarBar.entitlements
+    settings:
+      base:
+        SWIFT_VERSION: "5.9"
+        MACOSX_DEPLOYMENT_TARGET: "13.0"
+        PRODUCT_BUNDLE_IDENTIFIER: com.rajdeepgupta.CalendarBar
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        INFOPLIST_KEY_LSUIElement: true
+        GENERATE_INFOPLIST_FILE: true
