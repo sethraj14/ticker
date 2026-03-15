@@ -7,6 +7,7 @@ final class CalendarViewModel: ObservableObject {
     @Published var events: [CalendarEvent] = []
 
     let googleService = GoogleCalendarService.shared
+    let notificationService = NotificationService.shared
     private var timer: AnyCancellable?
     private var refreshTimer: AnyCancellable?
     private var cancellables = Set<AnyCancellable>()
@@ -14,6 +15,7 @@ final class CalendarViewModel: ObservableObject {
     init() {
         startTimer()
         startRefreshTimer()
+        notificationService.requestAuthorization()
 
         // Watch for auth state changes
         googleService.$isAuthenticated
@@ -24,6 +26,14 @@ final class CalendarViewModel: ObservableObject {
                 } else {
                     self?.events = []
                 }
+            }
+            .store(in: &cancellables)
+
+        // Re-schedule notifications when events change
+        $events
+            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
+            .sink { [weak self] events in
+                self?.notificationService.scheduleNotifications(for: events)
             }
             .store(in: &cancellables)
     }
