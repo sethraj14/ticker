@@ -163,6 +163,7 @@ Ticker/
 | Decision | Why |
 |----------|-----|
 | SwiftUI + MenuBarExtra | Native macOS 13+ API, smallest possible binary |
+| Custom `Layout` for timeline | Pixel-perfect grid-event alignment via `AbsoluteLayout` |
 | No dock icon | Pure utility — `LSUIElement = true` |
 | File-based token storage | Avoids Keychain password prompts on unsigned builds |
 | Sliding window cache | Prefetch ±2 days for instant navigation |
@@ -173,7 +174,9 @@ Ticker/
 
 ## Roadmap
 
-- [ ] Multiple Google account support
+- [x] Multiple Google account support
+- [x] Manual sync button
+- [x] Pixel-perfect timeline alignment (custom `Layout` protocol)
 - [ ] Calendar selection (show/hide specific calendars)
 - [ ] Keyboard shortcuts
 - [ ] Custom app icon for menu bar

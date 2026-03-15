@@ -18,7 +18,7 @@ final class CalendarViewModel: ObservableObject {
     private var refreshTimer: AnyCancellable?
     private var cancellables = Set<AnyCancellable>()
     private var navigationDebounce: AnyCancellable?
-    private var isFetching = false
+    @Published var isSyncing = false
 
     private static let cacheDateFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -158,8 +158,8 @@ final class CalendarViewModel: ObservableObject {
 
     /// Main refresh — fetches today + selected date, updates everything
     private func refreshAll() {
-        guard !isFetching else { return }
-        isFetching = true
+        guard !isSyncing else { return }
+        isSyncing = true
         eventCache.removeAll()
 
         Task { @MainActor in
@@ -183,7 +183,7 @@ final class CalendarViewModel: ObservableObject {
                 }
             }
 
-            isFetching = false
+            isSyncing = false
             prefetchAround(selectedDate)
         }
     }

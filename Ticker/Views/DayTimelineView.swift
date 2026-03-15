@@ -1,5 +1,48 @@
 import SwiftUI
 
+// MARK: - Custom Layout (places children at exact pixel coordinates)
+
+/// Layout value keys — each child specifies its top-left position
+private struct TimelineX: LayoutValueKey {
+    static let defaultValue: CGFloat = 0
+}
+
+private struct TimelineY: LayoutValueKey {
+    static let defaultValue: CGFloat = 0
+}
+
+/// Places every child at an absolute (x, y) from the layout's top-left.
+private struct AbsoluteLayout: Layout {
+    let width: CGFloat
+    let height: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        CGSize(width: width, height: height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        for subview in subviews {
+            let x = subview[TimelineX.self]
+            let y = subview[TimelineY.self]
+            let size = subview.sizeThatFits(.unspecified)
+            subview.place(
+                at: CGPoint(x: bounds.minX + x, y: bounds.minY + y),
+                anchor: .topLeading,
+                proposal: ProposedViewSize(width: size.width, height: size.height)
+            )
+        }
+    }
+}
+
+private extension View {
+    func timelinePosition(x: CGFloat, y: CGFloat) -> some View {
+        self.layoutValue(key: TimelineX.self, value: x)
+            .layoutValue(key: TimelineY.self, value: y)
+    }
+}
+
+// MARK: - DayTimelineView
+
 struct DayTimelineView: View {
     let events: [CalendarEvent]
     let selectedEventID: String?
@@ -13,99 +56,103 @@ struct DayTimelineView: View {
     private let workDayStart = 8
 
     private var eventAreaWidth: CGFloat { viewWidth - lineStart - 8 }
+    private var contentHeight: CGFloat { CGFloat(totalHours) * hourHeight }
 
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView(.vertical, showsIndicators: true) {
-                // SINGLE ZStack — grid and events as siblings, same coordinate space
-                ZStack(alignment: .topLeading) {
-                    // Layer 0: VStack grid — sets content height + scroll anchors
-                    gridVStack
-
-                    // Layer 1: Events
-                    ForEach(computeColumns(events: events), id: \.event.id) { le in
-                        eventView(for: le)
-                    }
-
-                    // Layer 2: Now indicator
-                    nowLine
+                // SINGLE layout — scroll anchors, grid, events, now-line all in one coordinate space
+                AbsoluteLayout(width: viewWidth, height: contentHeight) {
+                    scrollAnchors
+                    gridContent
+                    eventContent
+                    nowLineContent
                 }
             }
             .frame(maxHeight: .infinity)
             .onAppear {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                     scrollToWorkHours(proxy: proxy)
                 }
             }
         }
     }
 
-    // MARK: - Grid VStack
+    // MARK: - Scroll Anchors (invisible, inside the same layout)
 
-    // This VStack is the LARGEST child of the ZStack, so it determines
-    // the ZStack's size (24 * 40 = 960px). All other children are offset
-    // within this 960px space from (0, 0).
-    private var gridVStack: some View {
-        VStack(spacing: 0) {
-            ForEach(0..<totalHours, id: \.self) { hour in
-                // Each cell: line at TOP, spacer fills the rest
-                ZStack(alignment: .topLeading) {
-                    // Horizontal grid line — at y=0 of this cell
-                    Rectangle()
-                        .fill(Color.primary.opacity(0.1))
-                        .frame(height: 1)
-                        .padding(.leading, lineStart)
-
-                    // Hour label — sits above the line
-                    Text(hourLabel(hour))
-                        .font(.system(size: 10))
-                        .foregroundStyle(.tertiary)
-                        .frame(width: labelWidth, alignment: .trailing)
-                        .offset(y: -8)
-                }
-                .frame(height: hourHeight)
+    @ViewBuilder
+    private var scrollAnchors: some View {
+        ForEach(0..<totalHours, id: \.self) { hour in
+            Color.clear
+                .frame(width: 1, height: hourHeight)
+                .timelinePosition(x: 0, y: CGFloat(hour) * hourHeight)
                 .id(hour)
-            }
         }
     }
 
-    // MARK: - Single Event View
+    // MARK: - Grid (lines + labels)
 
-    private func eventView(for le: LayoutEvent) -> some View {
-        let topY = timeToY(le.event.startDate)
-        let bottomY = timeToY(le.event.endDate)
-        let height = max(bottomY - topY, 10)
-        let colWidth = eventAreaWidth / CGFloat(le.totalColumns)
-        let leftX = lineStart + colWidth * CGFloat(le.column)
-        let isSelected = selectedEventID == le.event.id
+    @ViewBuilder
+    private var gridContent: some View {
+        ForEach(0..<totalHours, id: \.self) { hour in
+            let y = CGFloat(hour) * hourHeight
 
-        // .position() places CENTER of view at (x, y)
-        let centerX = leftX + (colWidth - 2) / 2
-        let centerY = topY + height / 2
+            // Horizontal grid line
+            Rectangle()
+                .fill(Color.primary.opacity(0.1))
+                .frame(width: viewWidth - lineStart, height: 1)
+                .timelinePosition(x: lineStart, y: y)
+                .allowsHitTesting(false)
 
-        return MeetingBlockView(event: le.event, isSelected: isSelected) {
-            onSelectEvent(le.event)
+            // Hour label
+            Text(hourLabel(hour))
+                .font(.system(size: 10))
+                .foregroundStyle(.tertiary)
+                .frame(width: labelWidth, alignment: .trailing)
+                .timelinePosition(x: 0, y: y - 8)
+                .allowsHitTesting(false)
         }
-        .frame(width: colWidth - 2, height: height)
-        .position(x: centerX, y: centerY)
+    }
+
+    // MARK: - Events
+
+    @ViewBuilder
+    private var eventContent: some View {
+        ForEach(computeColumns(events: events), id: \.event.id) { le in
+            let topY = timeToY(le.event.startDate)
+            let bottomY = timeToY(le.event.endDate)
+            let height = max(bottomY - topY, 10)
+            let colWidth = eventAreaWidth / CGFloat(le.totalColumns)
+            let leftX = lineStart + colWidth * CGFloat(le.column)
+            let isSelected = selectedEventID == le.event.id
+
+            MeetingBlockView(event: le.event, isSelected: isSelected) {
+                onSelectEvent(le.event)
+            }
+            .frame(width: colWidth - 2, height: height)
+            .timelinePosition(x: leftX, y: topY)
+        }
     }
 
     // MARK: - Now Line
 
-    private var nowLine: some View {
+    @ViewBuilder
+    private var nowLineContent: some View {
         let y = timeToY(Date.now)
-        return HStack(spacing: 0) {
-            Color.clear.frame(width: lineStart - 4)
-            Circle()
-                .fill(.red)
-                .frame(width: 8, height: 8)
-            Rectangle()
-                .fill(.red)
-                .frame(height: 1.5)
-        }
-        .frame(width: viewWidth, height: 8)
-        .position(x: viewWidth / 2, y: y)
-        .allowsHitTesting(false)
+
+        // Red dot
+        Circle()
+            .fill(.red)
+            .frame(width: 8, height: 8)
+            .timelinePosition(x: lineStart - 8, y: y - 4)
+            .allowsHitTesting(false)
+
+        // Red line
+        Rectangle()
+            .fill(.red)
+            .frame(width: viewWidth - lineStart, height: 1.5)
+            .timelinePosition(x: lineStart, y: y - 0.75)
+            .allowsHitTesting(false)
     }
 
     // MARK: - Column Layout
@@ -147,9 +194,6 @@ struct DayTimelineView: View {
 
     // MARK: - Helpers
 
-    // THE source of truth for time → y position.
-    // Grid cell for hour N starts at y = N * hourHeight (VStack cells).
-    // timeToY(2:00 PM) = 14 * 40 = 560 = same as cell 14's top. ✓
     private func timeToY(_ date: Date) -> CGFloat {
         let cal = Calendar.current
         let h = cal.component(.hour, from: date)

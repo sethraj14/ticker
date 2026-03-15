@@ -196,6 +196,24 @@ struct PopoverView: View {
             Spacer()
 
             Button {
+                viewModel.fetchEvents()
+            } label: {
+                Image(systemName: "arrow.clockwise")
+                    .font(.system(size: 12))
+                    .rotationEffect(.degrees(viewModel.isSyncing ? 360 : 0))
+                    .animation(
+                        viewModel.isSyncing
+                            ? .linear(duration: 1).repeatForever(autoreverses: false)
+                            : .default,
+                        value: viewModel.isSyncing
+                    )
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .disabled(viewModel.isSyncing)
+            .padding(.vertical, 10)
+
+            Button {
                 NSApplication.shared.terminate(nil)
             } label: {
                 Image(systemName: "power")
