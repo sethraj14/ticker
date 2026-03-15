@@ -5,7 +5,9 @@ struct PopoverView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if viewModel.isAuthenticated {
+            if viewModel.showSettings {
+                SettingsView(viewModel: viewModel)
+            } else if viewModel.isAuthenticated {
                 authenticatedView
             } else {
                 signInView
@@ -98,7 +100,9 @@ struct PopoverView: View {
     private var bottomBar: some View {
         HStack {
             Button {
-                // Settings will be added in Phase 5
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    viewModel.showSettings = true
+                }
             } label: {
                 Label("Settings", systemImage: "gear")
                     .font(.caption)
@@ -109,14 +113,6 @@ struct PopoverView: View {
             .padding(.vertical, 8)
 
             Spacer()
-
-            Button("Sign Out") {
-                viewModel.signOut()
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(.secondary)
-            .font(.caption)
-            .padding(.trailing, 4)
 
             Button("Quit") {
                 NSApplication.shared.terminate(nil)
