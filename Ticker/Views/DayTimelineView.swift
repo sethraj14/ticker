@@ -8,18 +8,23 @@ struct DayTimelineView: View {
     private let hourHeight: CGFloat = 40
     private let totalHours = 24
     private let labelWidth: CGFloat = 50
-    private let eventPadding: CGFloat = 6
+    private let lineStart: CGFloat = 56
+    private let eventStart: CGFloat = 56
+    private let viewWidth: CGFloat = 340
     private let workDayStart = 8
-
-    private var totalHeight: CGFloat { CGFloat(totalHours) * hourHeight }
-    private var eventAreaLeft: CGFloat { labelWidth + eventPadding }
-    private var eventAreaWidth: CGFloat { 340 - eventAreaLeft - 8 }
 
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView(.vertical, showsIndicators: true) {
-                canvas
-                    .frame(width: 340, height: totalHeight)
+                // VStack grid is the source of truth for layout and scrolling
+                grid
+                    .overlay(alignment: .topLeading) {
+                        // Events overlaid — shares exact coordinate system with grid
+                        GeometryReader { _ in
+                            eventLayer
+                            nowIndicator
+                        }
+                    }
             }
             .frame(maxHeight: .infinity)
             .onAppear {
@@ -28,63 +33,47 @@ struct DayTimelineView: View {
         }
     }
 
-    // Everything in one coordinate system
-    private var canvas: some View {
-        ZStack(alignment: .topLeading) {
-            // 0. Invisible base that establishes the full scrollable height
-            //    + scroll anchor views at each hour
-            VStack(spacing: 0) {
-                ForEach(0..<totalHours, id: \.self) { hour in
-                    Color.clear
-                        .frame(height: hourHeight)
-                        .id(hour)
+    // MARK: - Grid (VStack — controls scroll height and hour positions)
+
+    private var grid: some View {
+        VStack(spacing: 0) {
+            ForEach(0..<totalHours, id: \.self) { hour in
+                VStack(spacing: 0) {
+                    // Grid line at exact top of each cell
+                    HStack(spacing: 0) {
+                        // Hour label — positioned so baseline sits on the line
+                        Text(hourLabel(hour))
+                            .font(.system(size: 10))
+                            .foregroundStyle(.tertiary)
+                            .frame(width: labelWidth, alignment: .trailing)
+
+                        // Horizontal line
+                        Rectangle()
+                            .fill(Color.primary.opacity(0.1))
+                            .frame(height: 1)
+                            .padding(.leading, 6)
+                    }
+
+                    Spacer(minLength: 0)
                 }
+                .frame(height: hourHeight)
+                .id(hour)
             }
-
-            // 1. Grid lines + labels
-            gridLayer
-
-            // 2. Event blocks
-            eventBlocks
-
-            // 3. Now indicator
-            nowIndicator
         }
     }
 
-    // MARK: - Grid Layer
+    // MARK: - Event Layer
 
-    private var gridLayer: some View {
-        ForEach(0..<totalHours, id: \.self) { hour in
-            // Grid line
-            Rectangle()
-                .fill(Color.primary.opacity(0.1))
-                .frame(width: 340 - labelWidth - eventPadding, height: 1)
-                .offset(x: labelWidth + eventPadding, y: CGFloat(hour) * hourHeight)
-
-            // Hour label (bottom of text aligns with line)
-            Text(hourLabel(hour))
-                .font(.system(size: 10))
-                .foregroundStyle(.tertiary)
-                .fixedSize()
-                .offset(
-                    x: 4,
-                    y: CGFloat(hour) * hourHeight - 14
-                )
-        }
-    }
-
-    // MARK: - Event Blocks
-
-    private var eventBlocks: some View {
+    private var eventLayer: some View {
         let layout = computeColumns(events: events)
+        let eventWidth = viewWidth - eventStart - 8
 
         return ForEach(layout, id: \.event.id) { le in
             let topY = timeToY(le.event.startDate)
             let bottomY = timeToY(le.event.endDate)
             let height = max(bottomY - topY, 10)
-            let colWidth = eventAreaWidth / CGFloat(le.totalColumns)
-            let leftX = eventAreaLeft + colWidth * CGFloat(le.column)
+            let colWidth = eventWidth / CGFloat(le.totalColumns)
+            let leftX = eventStart + colWidth * CGFloat(le.column)
             let isSelected = selectedEventID == le.event.id
 
             MeetingBlockView(event: le.event, isSelected: isSelected) {
@@ -100,17 +89,17 @@ struct DayTimelineView: View {
     private var nowIndicator: some View {
         let y = timeToY(Date.now)
 
-        return Group {
+        return HStack(spacing: 0) {
+            Spacer()
+                .frame(width: lineStart - 4)
             Circle()
                 .fill(.red)
                 .frame(width: 8, height: 8)
-                .offset(x: labelWidth + eventPadding - 4, y: y - 4)
-
             Rectangle()
                 .fill(.red)
-                .frame(width: 340 - labelWidth - eventPadding, height: 1.5)
-                .offset(x: labelWidth + eventPadding, y: y - 0.75)
+                .frame(height: 1.5)
         }
+        .offset(y: y - 4)
         .allowsHitTesting(false)
     }
 
@@ -153,8 +142,9 @@ struct DayTimelineView: View {
 
     // MARK: - Helpers
 
-    /// Converts a time to a Y position. This is the ONLY function that maps time → pixels.
-    /// Grid lines and events both use this, guaranteeing alignment.
+    /// Single source of truth: time → y pixel position.
+    /// Grid line for hour N is at y = N * hourHeight (top of each VStack cell).
+    /// This function produces the same values for on-the-hour times.
     private func timeToY(_ date: Date) -> CGFloat {
         let cal = Calendar.current
         let h = cal.component(.hour, from: date)
