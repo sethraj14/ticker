@@ -26,6 +26,7 @@
 
 /* Begin PBXFileReference section */
 		05699A6C043E8E518FF91EA3 /* CalendarEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarEvent.swift; sourceTree = "<group>"; };
+		1A8E069757E9F74023C92C63 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 		287E4B07BBC0CA65BBB205F5 /* DayTimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayTimelineView.swift; sourceTree = "<group>"; };
 		3692C6B09BF1A94511DA4034 /* JoinSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JoinSection.swift; sourceTree = "<group>"; };
 		39E4DE9289130B15D5D8E9C7 /* DayNavigationBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayNavigationBar.swift; sourceTree = "<group>"; };
@@ -108,6 +109,7 @@
 				901A17AB1CAAA679950163A7 /* Assets.xcassets */,
 				5AFDC2131438FA863BEAE957 /* CalendarBar.entitlements */,
 				96E51E6413F7F6C61097E226 /* CalendarBarApp.swift */,
+				1A8E069757E9F74023C92C63 /* Config.xcconfig */,
 				9BFE29C4F44107F7D46EF5D2 /* Info.plist */,
 				5000B3BF28FBD7B62EAF947F /* Helpers */,
 				01551AF14C78BC7BC9F1CD6E /* Models */,
@@ -278,6 +280,7 @@
 		};
 		1E0AE2BC531816EDF30246FE /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 1A8E069757E9F74023C92C63 /* Config.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = CalendarBar/CalendarBar.entitlements;
@@ -300,6 +303,7 @@
 		};
 		311C9D97F6FC7CD918B5F002 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 1A8E069757E9F74023C92C63 /* Config.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = CalendarBar/CalendarBar.entitlements;
