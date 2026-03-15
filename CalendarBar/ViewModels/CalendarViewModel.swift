@@ -4,18 +4,27 @@ import Combine
 final class CalendarViewModel: ObservableObject {
     @Published var menuBarLabel: String = "No meetings"
     @Published var selectedDate: Date = .now
-    @Published var displayedEvents: [CalendarEvent] = []  // events for selected day
+    @Published var displayedEvents: [CalendarEvent] = []
     @Published var showSettings = false
-    @Published var selectedEvent: CalendarEvent? = nil     // tapped meeting for join section
+    @Published var selectedEvent: CalendarEvent? = nil
+    @Published var isLoadingEvents = false
 
     let googleService = GoogleCalendarService.shared
     let notificationService = NotificationService.shared
     let eventKitService = EventKitService.shared
 
-    private var todayEvents: [CalendarEvent] = []  // always today's events for menu bar
+    @Published private var todayEvents: [CalendarEvent] = []
+    private var eventCache: [String: [CalendarEvent]] = [:]  // "yyyy-MM-dd" -> events
     private var timer: AnyCancellable?
     private var refreshTimer: AnyCancellable?
     private var cancellables = Set<AnyCancellable>()
+    private var navigationDebounce: AnyCancellable?
+
+    private static let cacheDateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
 
     init() {
         startTimer()
@@ -24,27 +33,26 @@ final class CalendarViewModel: ObservableObject {
         setupWakeObserver()
 
         eventKitService.onEventsChanged = { [weak self] in
-            self?.fetchEvents()
+            self?.invalidateCacheAndRefresh()
         }
 
         googleService.$isAuthenticated
             .removeDuplicates()
             .sink { [weak self] isAuth in
                 if isAuth {
-                    self?.fetchEvents()
+                    self?.initialFetch()
                 } else {
                     self?.displayedEvents = []
                     self?.todayEvents = []
+                    self?.eventCache.removeAll()
                 }
             }
             .store(in: &cancellables)
 
-        // Schedule notifications when today's events change
-        $displayedEvents
+        $todayEvents
             .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
-            .sink { [weak self] _ in
-                guard let self else { return }
-                self.notificationService.scheduleNotifications(for: self.todayEvents)
+            .sink { [weak self] events in
+                self?.notificationService.scheduleNotifications(for: events)
             }
             .store(in: &cancellables)
     }
@@ -67,7 +75,6 @@ final class CalendarViewModel: ObservableObject {
         return selectedDate.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())
     }
 
-    // Next upcoming event — always from TODAY's events (for menu bar)
     var nextUpcomingEvent: CalendarEvent? {
         let now = Date.now
         return todayEvents
@@ -76,7 +83,6 @@ final class CalendarViewModel: ObservableObject {
             .first
     }
 
-    // The event to show in join section: selected event, or next upcoming if viewing today
     var joinSectionEvent: CalendarEvent? {
         if let selected = selectedEvent {
             return selected
@@ -89,24 +95,45 @@ final class CalendarViewModel: ObservableObject {
 
     func selectEvent(_ event: CalendarEvent) {
         if selectedEvent?.id == event.id {
-            selectedEvent = nil  // deselect on second tap
+            selectedEvent = nil
         } else {
             selectedEvent = event
         }
     }
 
     func navigateDay(by offset: Int) {
-        if let newDate = Calendar.current.date(byAdding: .day, value: offset, to: selectedDate) {
-            selectedDate = newDate
-            selectedEvent = nil
-            fetchDisplayedEvents()
+        guard let newDate = Calendar.current.date(byAdding: .day, value: offset, to: selectedDate) else { return }
+        selectedDate = newDate
+        selectedEvent = nil
+
+        // Show cached data immediately if available
+        let key = cacheKey(for: newDate)
+        if let cached = eventCache[key] {
+            displayedEvents = cached
+        } else {
+            isLoadingEvents = true
         }
+
+        // Debounce: if user clicks rapidly, only fetch for the final date
+        navigationDebounce?.cancel()
+        navigationDebounce = Just(newDate)
+            .delay(for: .milliseconds(250), scheduler: RunLoop.main)
+            .sink { [weak self] date in
+                self?.fetchAndCacheDate(date, updateDisplay: true)
+                self?.prefetchAround(date)
+            }
     }
 
     func goToToday() {
         selectedDate = .now
         selectedEvent = nil
-        fetchEvents()
+
+        let key = cacheKey(for: .now)
+        if let cached = eventCache[key] {
+            displayedEvents = cached
+        }
+
+        fetchAndCacheDate(.now, updateDisplay: true)
     }
 
     func authenticate() {
@@ -117,13 +144,11 @@ final class CalendarViewModel: ObservableObject {
         googleService.signOut()
         displayedEvents = []
         todayEvents = []
+        eventCache.removeAll()
     }
 
     func fetchEvents() {
-        // Always fetch today for menu bar
-        fetchTodayEvents()
-        // Fetch displayed date
-        fetchDisplayedEvents()
+        invalidateCacheAndRefresh()
     }
 
     func rescheduleNotifications() {
@@ -132,28 +157,67 @@ final class CalendarViewModel: ObservableObject {
 
     // MARK: - Private
 
+    private func cacheKey(for date: Date) -> String {
+        Self.cacheDateFormatter.string(from: date)
+    }
+
+    private func initialFetch() {
+        // Fetch today + prefetch ±1 day
+        fetchAndCacheDate(.now, updateDisplay: true)
+        fetchTodayEvents()
+        prefetchAround(.now)
+    }
+
+    private func invalidateCacheAndRefresh() {
+        eventCache.removeAll()
+        fetchTodayEvents()
+        fetchAndCacheDate(selectedDate, updateDisplay: true)
+        prefetchAround(selectedDate)
+    }
+
     private func fetchTodayEvents() {
         Task { @MainActor in
-            let today = Date.now
-            var allEvents: [CalendarEvent] = []
-            let googleEvents = await googleService.fetchEvents(for: today)
-            allEvents.append(contentsOf: googleEvents)
-            let appleEvents = eventKitService.fetchEvents(for: today)
-            allEvents.append(contentsOf: appleEvents)
-            self.todayEvents = deduplicateEvents(allEvents)
+            let events = await fetchMergedEvents(for: .now)
+            self.todayEvents = events
+            let key = cacheKey(for: .now)
+            self.eventCache[key] = events
         }
     }
 
-    private func fetchDisplayedEvents() {
-        let dateToFetch = selectedDate
+    private func fetchAndCacheDate(_ date: Date, updateDisplay: Bool) {
+        let key = cacheKey(for: date)
         Task { @MainActor in
-            var allEvents: [CalendarEvent] = []
-            let googleEvents = await googleService.fetchEvents(for: dateToFetch)
-            allEvents.append(contentsOf: googleEvents)
-            let appleEvents = eventKitService.fetchEvents(for: dateToFetch)
-            allEvents.append(contentsOf: appleEvents)
-            self.displayedEvents = deduplicateEvents(allEvents)
+            let events = await fetchMergedEvents(for: date)
+            self.eventCache[key] = events
+
+            // Only update display if this is still the selected date
+            if updateDisplay && cacheKey(for: self.selectedDate) == key {
+                self.displayedEvents = events
+                self.isLoadingEvents = false
+            }
         }
+    }
+
+    private func prefetchAround(_ date: Date) {
+        let calendar = Calendar.current
+        for offset in [-1, 1, 2] {
+            if let d = calendar.date(byAdding: .day, value: offset, to: date) {
+                let key = cacheKey(for: d)
+                if eventCache[key] == nil {
+                    fetchAndCacheDate(d, updateDisplay: false)
+                }
+            }
+        }
+    }
+
+    private func fetchMergedEvents(for date: Date) async -> [CalendarEvent] {
+        async let googleEvents = googleService.fetchEvents(for: date)
+        let appleEvents = eventKitService.fetchEvents(for: date)
+
+        var allEvents: [CalendarEvent] = []
+        allEvents.append(contentsOf: await googleEvents)
+        allEvents.append(contentsOf: appleEvents)
+        return deduplicateEvents(allEvents)
     }
 
     private func deduplicateEvents(_ events: [CalendarEvent]) -> [CalendarEvent] {
@@ -181,7 +245,7 @@ final class CalendarViewModel: ObservableObject {
             .autoconnect()
             .sink { [weak self] _ in
                 guard let self, self.isAuthenticated else { return }
-                self.fetchEvents()
+                self.invalidateCacheAndRefresh()
             }
     }
 
@@ -195,7 +259,6 @@ final class CalendarViewModel: ObservableObject {
         }
     }
 
-    // Menu bar ALWAYS shows today's next event countdown
     private func updateMenuBarLabel() {
         guard let next = nextUpcomingEvent else {
             menuBarLabel = "No meetings"
