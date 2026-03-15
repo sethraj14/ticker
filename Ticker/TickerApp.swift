@@ -11,7 +11,7 @@ struct TickerApp: App {
             if viewModel.menuBarLabel == "No meetings" {
                 Image(systemName: "timer")
             } else {
-                HStack(spacing: 4) {
+                HStack(spacing: 6) {
                     Image(systemName: "timer")
                     Text(viewModel.menuBarLabel)
                 }

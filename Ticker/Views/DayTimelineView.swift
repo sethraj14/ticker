@@ -47,11 +47,10 @@ struct DayTimelineView: View {
                         .padding(.trailing, 4)
                         .offset(y: -6)
 
-                    Rectangle()
-                        .fill(.quaternary.opacity(0.5))
-                        .frame(height: 0.5)
-
-                    Spacer()
+                    VStack(spacing: 0) {
+                        Divider()
+                        Spacer()
+                    }
                 }
                 .frame(height: hourHeight)
                 .id(hour)
@@ -165,10 +164,10 @@ struct DayTimelineView: View {
     }
 
     private func hourLabel(_ hour: Int) -> String {
-        if hour == 0 { return "12a" }
-        if hour < 12 { return "\(hour)a" }
-        if hour == 12 { return "12p" }
-        return "\(hour - 12)p"
+        if hour == 0 { return "12 AM" }
+        if hour < 12 { return "\(hour) AM" }
+        if hour == 12 { return "12 PM" }
+        return "\(hour - 12) PM"
     }
 
     private func scrollToWorkHours(proxy: ScrollViewProxy) {
