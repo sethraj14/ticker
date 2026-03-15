@@ -6,28 +6,20 @@ struct DayTimelineView: View {
     let onSelectEvent: (CalendarEvent) -> Void
 
     private let hourHeight: CGFloat = 40
-    private let startHour = 0
-    private let endHour = 24
-    private let timeColumnWidth: CGFloat = 50
-    private let eventLeading: CGFloat = 56
-    private let eventTrailing: CGFloat = 8
+    private let totalHours = 24
+    private let labelWidth: CGFloat = 50
+    private let eventPadding: CGFloat = 6
     private let workDayStart = 8
 
-    private var totalHeight: CGFloat {
-        CGFloat(endHour - startHour) * hourHeight
-    }
+    private var totalHeight: CGFloat { CGFloat(totalHours) * hourHeight }
+    private var eventAreaLeft: CGFloat { labelWidth + eventPadding }
+    private var eventAreaWidth: CGFloat { 340 - eventAreaLeft - 8 }
 
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView(.vertical, showsIndicators: true) {
-                // Single coordinate system: grid is the base, events overlay on top
-                hourGrid
-                    .overlay(alignment: .topLeading) {
-                        eventLayer
-                    }
-                    .overlay(alignment: .topLeading) {
-                        nowLine
-                    }
+                canvas
+                    .frame(width: 340, height: totalHeight)
             }
             .frame(maxHeight: .infinity)
             .onAppear {
@@ -36,83 +28,80 @@ struct DayTimelineView: View {
         }
     }
 
-    // MARK: - Hour Grid (base layer)
+    // Everything in one coordinate system
+    private var canvas: some View {
+        ZStack(alignment: .topLeading) {
+            // 1. Grid lines + labels (background)
+            gridLayer
 
-    private var hourGrid: some View {
-        VStack(spacing: 0) {
-            ForEach(startHour..<endHour, id: \.self) { hour in
-                HStack(alignment: .top, spacing: 0) {
-                    // Hour label — bottom-aligned to the grid line
-                    Text(hourLabel(hour))
-                        .font(.system(size: 10))
-                        .foregroundStyle(.tertiary)
-                        .frame(width: timeColumnWidth - 6, alignment: .trailing)
-                        .offset(y: -13) // text sits above the line
+            // 2. Event blocks
+            eventBlocks
 
-                    // Horizontal line from after label to right edge
-                    VStack(spacing: 0) {
-                        Rectangle()
-                            .fill(Color.primary.opacity(0.1))
-                            .frame(height: 1)
-                        Spacer()
-                    }
-                    .padding(.leading, 6)
-                }
-                .frame(height: hourHeight)
+            // 3. Now indicator
+            nowIndicator
+        }
+    }
+
+    // MARK: - Grid Layer
+
+    private var gridLayer: some View {
+        ForEach(0..<totalHours, id: \.self) { hour in
+            // Grid line
+            Rectangle()
+                .fill(Color.primary.opacity(0.1))
+                .frame(width: 340 - labelWidth - eventPadding, height: 1)
+                .offset(x: labelWidth + eventPadding, y: CGFloat(hour) * hourHeight)
+
+            // Hour label (bottom of text aligns with line)
+            Text(hourLabel(hour))
+                .font(.system(size: 10))
+                .foregroundStyle(.tertiary)
+                .fixedSize()
+                .offset(
+                    x: 4,
+                    y: CGFloat(hour) * hourHeight - 14
+                )
                 .id(hour)
-            }
         }
-        .frame(width: 340, height: totalHeight)
     }
 
-    // MARK: - Event Layer (overlaid on grid)
+    // MARK: - Event Blocks
 
-    private var eventLayer: some View {
-        let layoutEvents = computeColumns(events: events)
-        let availableWidth = 340 - eventLeading - eventTrailing
+    private var eventBlocks: some View {
+        let layout = computeColumns(events: events)
 
-        return ZStack(alignment: .topLeading) {
-            // Invisible spacer to fill the full grid area
-            Color.clear.frame(width: 340, height: totalHeight)
+        return ForEach(layout, id: \.event.id) { le in
+            let topY = timeToY(le.event.startDate)
+            let bottomY = timeToY(le.event.endDate)
+            let height = max(bottomY - topY, 10)
+            let colWidth = eventAreaWidth / CGFloat(le.totalColumns)
+            let leftX = eventAreaLeft + colWidth * CGFloat(le.column)
+            let isSelected = selectedEventID == le.event.id
 
-            ForEach(layoutEvents, id: \.event.id) { le in
-                let y = minutesFromMidnight(le.event.startDate) / 60.0 * hourHeight
-                let durationMins = max(Double(le.event.durationMinutes), 15)
-                let h = durationMins / 60.0 * hourHeight
-                let colWidth = availableWidth / CGFloat(le.totalColumns)
-                let x = eventLeading + colWidth * CGFloat(le.column)
-                let isSelected = selectedEventID == le.event.id
-
-                MeetingBlockView(event: le.event, isSelected: isSelected) {
-                    onSelectEvent(le.event)
-                }
-                .frame(width: colWidth - 2, height: h)
-                .position(x: x + (colWidth - 2) / 2, y: y + h / 2)
+            MeetingBlockView(event: le.event, isSelected: isSelected) {
+                onSelectEvent(le.event)
             }
+            .frame(width: colWidth - 2, height: height)
+            .offset(x: leftX, y: topY)
         }
-        .frame(width: 340, height: totalHeight)
     }
 
-    // MARK: - Now Line
+    // MARK: - Now Indicator
 
-    private var nowLine: some View {
-        let y = minutesFromMidnight(Date.now) / 60.0 * hourHeight
+    private var nowIndicator: some View {
+        let y = timeToY(Date.now)
 
-        return ZStack(alignment: .topLeading) {
-            Color.clear.frame(width: 340, height: totalHeight)
+        return Group {
+            Circle()
+                .fill(.red)
+                .frame(width: 8, height: 8)
+                .offset(x: labelWidth + eventPadding - 4, y: y - 4)
 
-            HStack(spacing: 0) {
-                Spacer().frame(width: eventLeading - 6)
-                Circle()
-                    .fill(.red)
-                    .frame(width: 8, height: 8)
-                Rectangle()
-                    .fill(.red)
-                    .frame(height: 1.5)
-            }
-            .position(x: 170, y: y)
+            Rectangle()
+                .fill(.red)
+                .frame(width: 340 - labelWidth - eventPadding, height: 1.5)
+                .offset(x: labelWidth + eventPadding, y: y - 0.75)
         }
-        .frame(width: 340, height: totalHeight)
         .allowsHitTesting(false)
     }
 
@@ -130,25 +119,24 @@ struct DayTimelineView: View {
 
         var groups: [[CalendarEvent]] = []
         var currentGroup: [CalendarEvent] = []
-        var currentGroupEnd: Date = .distantPast
+        var groupEnd: Date = .distantPast
 
         for event in sorted {
-            if event.startDate < currentGroupEnd {
+            if event.startDate < groupEnd {
                 currentGroup.append(event)
-                currentGroupEnd = max(currentGroupEnd, event.endDate)
+                groupEnd = max(groupEnd, event.endDate)
             } else {
                 if !currentGroup.isEmpty { groups.append(currentGroup) }
                 currentGroup = [event]
-                currentGroupEnd = event.endDate
+                groupEnd = event.endDate
             }
         }
         if !currentGroup.isEmpty { groups.append(currentGroup) }
 
         var result: [LayoutEvent] = []
         for group in groups {
-            let total = group.count
             for (i, event) in group.enumerated() {
-                result.append(LayoutEvent(event: event, column: i, totalColumns: total))
+                result.append(LayoutEvent(event: event, column: i, totalColumns: group.count))
             }
         }
         return result
@@ -156,11 +144,13 @@ struct DayTimelineView: View {
 
     // MARK: - Helpers
 
-    private func minutesFromMidnight(_ date: Date) -> CGFloat {
+    /// Converts a time to a Y position. This is the ONLY function that maps time → pixels.
+    /// Grid lines and events both use this, guaranteeing alignment.
+    private func timeToY(_ date: Date) -> CGFloat {
         let cal = Calendar.current
-        let hour = cal.component(.hour, from: date)
-        let minute = cal.component(.minute, from: date)
-        return CGFloat(hour * 60 + minute)
+        let h = cal.component(.hour, from: date)
+        let m = cal.component(.minute, from: date)
+        return (CGFloat(h) + CGFloat(m) / 60.0) * hourHeight
     }
 
     private func hourLabel(_ hour: Int) -> String {
@@ -172,9 +162,8 @@ struct DayTimelineView: View {
 
     private func scrollToWorkHours(proxy: ScrollViewProxy) {
         let currentHour = Calendar.current.component(.hour, from: Date.now)
-        let targetHour = (currentHour >= workDayStart && currentHour <= 18)
-            ? max(workDayStart, currentHour - 1)
-            : workDayStart
-        proxy.scrollTo(targetHour, anchor: .top)
+        let target = (currentHour >= workDayStart && currentHour <= 18)
+            ? max(workDayStart, currentHour - 1) : workDayStart
+        proxy.scrollTo(target, anchor: .top)
     }
 }
