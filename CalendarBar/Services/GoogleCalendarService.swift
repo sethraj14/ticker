@@ -136,6 +136,10 @@ final class GoogleCalendarService: ObservableObject {
     func fetchEvents(for date: Date) async -> [CalendarEvent] {
         guard let accessToken = await getValidAccessToken() else { return [] }
 
+        // Fetch all calendars the user has
+        let calendars = await fetchCalendarList(accessToken: accessToken)
+        if calendars.isEmpty { return [] }
+
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: date)
         guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else { return [] }
@@ -143,13 +147,68 @@ final class GoogleCalendarService: ObservableObject {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
 
-        var components = URLComponents(string: "\(calendarBaseURL)/calendars/primary/events")!
+        let timeMin = formatter.string(from: startOfDay)
+        let timeMax = formatter.string(from: endOfDay)
+        let tz = TimeZone.current.identifier
+
+        // Fetch events from ALL calendars concurrently
+        return await withTaskGroup(of: [CalendarEvent].self) { group in
+            for cal in calendars {
+                group.addTask {
+                    await self.fetchEventsFromCalendar(
+                        calendarId: cal.id,
+                        calendarColor: cal.color,
+                        accessToken: accessToken,
+                        timeMin: timeMin,
+                        timeMax: timeMax,
+                        timeZone: tz
+                    )
+                }
+            }
+
+            var allEvents: [CalendarEvent] = []
+            for await events in group {
+                allEvents.append(contentsOf: events)
+            }
+            return allEvents.sorted { $0.startDate < $1.startDate }
+        }
+    }
+
+    private func fetchCalendarList(accessToken: String) async -> [GoogleCalendarInfo] {
+        var request = URLRequest(url: URL(string: "\(calendarBaseURL)/users/me/calendarList")!)
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+                return []
+            }
+            let listResponse = try JSONDecoder().decode(GoogleCalendarListResponse.self, from: data)
+            // Include all non-hidden calendars: primary, holidays, subscribed, etc.
+            return listResponse.items
+                .filter { !($0.hidden ?? false) && !($0.deleted ?? false) }
+                .map { GoogleCalendarInfo(from: $0) }
+        } catch {
+            return []
+        }
+    }
+
+    private func fetchEventsFromCalendar(
+        calendarId: String,
+        calendarColor: Color,
+        accessToken: String,
+        timeMin: String,
+        timeMax: String,
+        timeZone: String
+    ) async -> [CalendarEvent] {
+        let encodedId = calendarId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? calendarId
+        var components = URLComponents(string: "\(calendarBaseURL)/calendars/\(encodedId)/events")!
         components.queryItems = [
-            URLQueryItem(name: "timeMin", value: formatter.string(from: startOfDay)),
-            URLQueryItem(name: "timeMax", value: formatter.string(from: endOfDay)),
+            URLQueryItem(name: "timeMin", value: timeMin),
+            URLQueryItem(name: "timeMax", value: timeMax),
             URLQueryItem(name: "singleEvents", value: "true"),
             URLQueryItem(name: "orderBy", value: "startTime"),
-            URLQueryItem(name: "timeZone", value: TimeZone.current.identifier),
+            URLQueryItem(name: "timeZone", value: timeZone),
         ]
 
         var request = URLRequest(url: components.url!)
@@ -157,14 +216,12 @@ final class GoogleCalendarService: ObservableObject {
 
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
-
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
                 return []
             }
-
             let eventsResponse = try JSONDecoder().decode(GoogleEventsResponse.self, from: data)
             return eventsResponse.items.compactMap { item in
-                parseGoogleEvent(item)
+                parseGoogleEvent(item, calendarColor: calendarColor)
             }
         } catch {
             return []
@@ -188,7 +245,7 @@ final class GoogleCalendarService: ObservableObject {
         return refreshed ? KeychainHelper.loadString(key: accessTokenKey) : nil
     }
 
-    private func parseGoogleEvent(_ item: GoogleEventItem) -> CalendarEvent? {
+    private func parseGoogleEvent(_ item: GoogleEventItem, calendarColor: Color = .blue) -> CalendarEvent? {
         guard let startDate = parseGoogleDateTime(item.start),
               let endDate = parseGoogleDateTime(item.end) else {
             return nil
@@ -209,7 +266,7 @@ final class GoogleCalendarService: ObservableObject {
             endDate: endDate,
             meetingURL: meetingURL,
             source: .google,
-            calendarColor: .blue,
+            calendarColor: calendarColor,
             attendees: attendees,
             location: item.location,
             notes: item.description
@@ -318,4 +375,40 @@ struct GoogleAttendee: Decodable {
     let email: String
     let displayName: String?
     let responseStatus: String?
+}
+
+// MARK: - Calendar List Types
+
+struct GoogleCalendarListResponse: Decodable {
+    let items: [GoogleCalendarListEntry]
+}
+
+struct GoogleCalendarListEntry: Decodable {
+    let id: String
+    let summary: String?
+    let backgroundColor: String?
+    let foregroundColor: String?
+    let hidden: Bool?
+    let deleted: Bool?
+    let accessRole: String?
+}
+
+struct GoogleCalendarInfo {
+    let id: String
+    let name: String
+    let color: Color
+
+    init(from entry: GoogleCalendarListEntry) {
+        self.id = entry.id
+        self.name = entry.summary ?? entry.id
+        self.color = Self.parseHexColor(entry.backgroundColor) ?? .blue
+    }
+
+    private static func parseHexColor(_ hex: String?) -> Color? {
+        guard let hex, hex.hasPrefix("#"), hex.count == 7 else { return nil }
+        let r = Double(Int(hex.dropFirst(1).prefix(2), radix: 16) ?? 0) / 255.0
+        let g = Double(Int(hex.dropFirst(3).prefix(2), radix: 16) ?? 0) / 255.0
+        let b = Double(Int(hex.dropFirst(5).prefix(2), radix: 16) ?? 0) / 255.0
+        return Color(red: r, green: g, blue: b)
+    }
 }
