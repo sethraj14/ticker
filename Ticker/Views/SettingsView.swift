@@ -220,7 +220,7 @@ struct SettingsView: View {
                     // Footer
                     HStack {
                         Spacer()
-                        Text("CalendarBar v0.1.0")
+                        Text("Ticker v0.1.0")
                             .font(.system(size: 11))
                             .foregroundStyle(.tertiary)
                         Spacer()

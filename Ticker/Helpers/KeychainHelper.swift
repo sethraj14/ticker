@@ -5,7 +5,7 @@ import Foundation
 enum KeychainHelper {
     private static let storageDir: URL = {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let dir = appSupport.appendingPathComponent("CalendarBar", isDirectory: true)
+        let dir = appSupport.appendingPathComponent("Ticker", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }()

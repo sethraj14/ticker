@@ -50,7 +50,7 @@ final class LoopbackHTTPServer {
                 <html><body style="font-family: -apple-system, system-ui; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f5f5f7;">
                 <div style="text-align: center;">
                 <h1 style="font-size: 48px; margin-bottom: 8px;">&#x2705;</h1>
-                <h2 style="color: #1d1d1f;">CalendarBar Connected</h2>
+                <h2 style="color: #1d1d1f;">Ticker Connected</h2>
                 <p style="color: #86868b;">You can close this tab and return to the app.</p>
                 </div></body></html>
                 """

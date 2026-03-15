@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct CalendarBarApp: App {
+struct TickerApp: App {
     @StateObject private var viewModel = CalendarViewModel()
 
     var body: some Scene {

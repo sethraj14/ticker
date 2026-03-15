@@ -1,4 +1,4 @@
-# CalendarBar — Design Document
+# Ticker — Design Document
 
 > Native macOS menu bar calendar app with meeting countdown, day view, and join notifications.
 
@@ -63,8 +63,8 @@ Apple EventKit       ──┘                              │
 
 ### Project Structure
 ```
-CalendarBar/
-├── CalendarBarApp.swift              # @main, MenuBarExtra scene
+Ticker/
+├── TickerApp.swift              # @main, MenuBarExtra scene
 ├── Views/
 │   ├── PopoverView.swift             # Main popup container
 │   ├── DayTimelineView.swift         # Scrollable hourly grid
