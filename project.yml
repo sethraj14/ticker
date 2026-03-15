@@ -20,6 +20,8 @@ targets:
         CFBundleDisplayName: CalendarBar
         CFBundleShortVersionString: "0.1.0"
         CFBundleVersion: "1"
+        GoogleClientID: "$(GOOGLE_CLIENT_ID)"
+        GoogleClientSecret: "$(GOOGLE_CLIENT_SECRET)"
     entitlements:
       path: CalendarBar/CalendarBar.entitlements
     configFiles:
