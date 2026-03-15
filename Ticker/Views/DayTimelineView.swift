@@ -20,9 +20,12 @@ struct DayTimelineView: View {
                 grid
                     .overlay(alignment: .topLeading) {
                         // Events overlaid — shares exact coordinate system with grid
+                        // MUST be ZStack, not implicit VStack (which stacks vertically)
                         GeometryReader { _ in
-                            eventLayer
-                            nowIndicator
+                            ZStack(alignment: .topLeading) {
+                                eventLayer
+                                nowIndicator
+                            }
                         }
                     }
             }
