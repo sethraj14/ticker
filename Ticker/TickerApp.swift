@@ -21,44 +21,51 @@ struct TickerApp: App {
     }
 }
 
-/// Custom menu bar icon — a minimalist clock with a tick mark
-/// Renders as a template image (monochrome, adapts to light/dark)
+/// Custom menu bar icon — countdown timer with arc
+/// A circle with a countdown-style arc gap and a small indicator dot
 struct TickerMenuBarIcon: View {
     var body: some View {
         Canvas { context, size in
             let center = CGPoint(x: size.width / 2, y: size.height / 2)
             let radius = min(size.width, size.height) / 2 - 1.5
 
-            // Clock circle
-            let circlePath = Path(ellipseIn: CGRect(
-                x: center.x - radius,
-                y: center.y - radius,
-                width: radius * 2,
-                height: radius * 2
-            ))
-            context.stroke(circlePath, with: .foreground, lineWidth: 1.5)
+            // Countdown arc (270 degrees — like 3/4 of a timer remaining)
+            var arc = Path()
+            arc.addArc(
+                center: center,
+                radius: radius,
+                startAngle: .degrees(-90),
+                endAngle: .degrees(200),
+                clockwise: false
+            )
+            context.stroke(arc, with: .foreground, style: StrokeStyle(lineWidth: 1.8, lineCap: .round))
 
-            // Minute hand (pointing to 12 — the "tick" position)
-            var minuteHand = Path()
-            minuteHand.move(to: center)
-            minuteHand.addLine(to: CGPoint(x: center.x, y: center.y - radius * 0.65))
-            context.stroke(minuteHand, with: .foreground, style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
-
-            // Hour hand (pointing to ~2 o'clock)
-            var hourHand = Path()
-            hourHand.move(to: center)
-            let hourAngle = Double.pi * 2 * (2.0 / 12.0) - Double.pi / 2
-            hourHand.addLine(to: CGPoint(
-                x: center.x + cos(hourAngle) * radius * 0.45,
-                y: center.y + sin(hourAngle) * radius * 0.45
-            ))
-            context.stroke(hourHand, with: .foreground, style: StrokeStyle(lineWidth: 1.8, lineCap: .round))
-
-            // Small tick dot at 12 o'clock
-            let dotRadius: CGFloat = 1.2
-            let dotY = center.y - radius + 3
-            let dotRect = CGRect(x: center.x - dotRadius, y: dotY - dotRadius, width: dotRadius * 2, height: dotRadius * 2)
+            // Gap indicator dot at the end of the arc gap (where countdown "ends")
+            let dotAngle = Double.pi * 200 / 180 - Double.pi / 2
+            let dotX = center.x + cos(dotAngle) * radius
+            let dotY = center.y + sin(dotAngle) * radius
+            let dotRect = CGRect(x: dotX - 1.5, y: dotY - 1.5, width: 3, height: 3)
             context.fill(Path(ellipseIn: dotRect), with: .foreground)
+
+            // Center vertical line (like a timer button/stem)
+            var stem = Path()
+            stem.move(to: CGPoint(x: center.x, y: center.y - radius - 2))
+            stem.addLine(to: CGPoint(x: center.x, y: center.y - radius + 3))
+            context.stroke(stem, with: .foreground, style: StrokeStyle(lineWidth: 1.8, lineCap: .round))
+
+            // Small hand pointing from center to ~1 o'clock
+            var hand = Path()
+            hand.move(to: center)
+            let handAngle = -Double.pi / 3 // ~1 o'clock
+            hand.addLine(to: CGPoint(
+                x: center.x + cos(handAngle) * radius * 0.5,
+                y: center.y + sin(handAngle) * radius * 0.5
+            ))
+            context.stroke(hand, with: .foreground, style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
+
+            // Center dot
+            let centerDot = CGRect(x: center.x - 1, y: center.y - 1, width: 2, height: 2)
+            context.fill(Path(ellipseIn: centerDot), with: .foreground)
         }
         .frame(width: 16, height: 16)
     }
