@@ -79,11 +79,15 @@ struct DayTimelineView: View {
         let leftX = lineStart + colWidth * CGFloat(le.column)
         let isSelected = selectedEventID == le.event.id
 
+        // .position() places CENTER of view at (x, y)
+        let centerX = leftX + (colWidth - 2) / 2
+        let centerY = topY + height / 2
+
         return MeetingBlockView(event: le.event, isSelected: isSelected) {
             onSelectEvent(le.event)
         }
         .frame(width: colWidth - 2, height: height)
-        .offset(x: leftX, y: topY)
+        .position(x: centerX, y: centerY)
     }
 
     // MARK: - Now Line
@@ -99,8 +103,8 @@ struct DayTimelineView: View {
                 .fill(.red)
                 .frame(height: 1.5)
         }
-        .frame(height: 8)
-        .offset(y: y - 4)
+        .frame(width: viewWidth, height: 8)
+        .position(x: viewWidth / 2, y: y)
         .allowsHitTesting(false)
     }
 
