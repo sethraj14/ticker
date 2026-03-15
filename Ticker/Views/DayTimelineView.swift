@@ -31,7 +31,17 @@ struct DayTimelineView: View {
     // Everything in one coordinate system
     private var canvas: some View {
         ZStack(alignment: .topLeading) {
-            // 1. Grid lines + labels (background)
+            // 0. Invisible base that establishes the full scrollable height
+            //    + scroll anchor views at each hour
+            VStack(spacing: 0) {
+                ForEach(0..<totalHours, id: \.self) { hour in
+                    Color.clear
+                        .frame(height: hourHeight)
+                        .id(hour)
+                }
+            }
+
+            // 1. Grid lines + labels
             gridLayer
 
             // 2. Event blocks
@@ -61,7 +71,6 @@ struct DayTimelineView: View {
                     x: 4,
                     y: CGFloat(hour) * hourHeight - 14
                 )
-                .id(hour)
         }
     }
 
