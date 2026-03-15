@@ -7,18 +7,18 @@ final class CalendarViewModel: ObservableObject {
     @Published var displayedEvents: [CalendarEvent] = []
     @Published var showSettings = false
     @Published var selectedEvent: CalendarEvent? = nil
-    @Published var isLoadingEvents = false
 
     let googleService = GoogleCalendarService.shared
     let notificationService = NotificationService.shared
     let eventKitService = EventKitService.shared
 
-    @Published private var todayEvents: [CalendarEvent] = []
-    private var eventCache: [String: [CalendarEvent]] = [:]  // "yyyy-MM-dd" -> events
+    private var todayEvents: [CalendarEvent] = []
+    private var eventCache: [String: [CalendarEvent]] = [:]
     private var timer: AnyCancellable?
     private var refreshTimer: AnyCancellable?
     private var cancellables = Set<AnyCancellable>()
     private var navigationDebounce: AnyCancellable?
+    private var isFetching = false
 
     private static let cacheDateFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -33,26 +33,19 @@ final class CalendarViewModel: ObservableObject {
         setupWakeObserver()
 
         eventKitService.onEventsChanged = { [weak self] in
-            self?.invalidateCacheAndRefresh()
+            self?.refreshAll()
         }
 
         googleService.$isAuthenticated
             .removeDuplicates()
             .sink { [weak self] isAuth in
                 if isAuth {
-                    self?.initialFetch()
+                    self?.refreshAll()
                 } else {
                     self?.displayedEvents = []
                     self?.todayEvents = []
                     self?.eventCache.removeAll()
                 }
-            }
-            .store(in: &cancellables)
-
-        $todayEvents
-            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
-            .sink { [weak self] events in
-                self?.notificationService.scheduleNotifications(for: events)
             }
             .store(in: &cancellables)
     }
@@ -78,7 +71,7 @@ final class CalendarViewModel: ObservableObject {
     var nextUpcomingEvent: CalendarEvent? {
         let now = Date.now
         return todayEvents
-            .filter { $0.endDate > now }
+            .filter { $0.endDate > now && !$0.isAllDay }
             .sorted { $0.startDate < $1.startDate }
             .first
     }
@@ -106,20 +99,18 @@ final class CalendarViewModel: ObservableObject {
         selectedDate = newDate
         selectedEvent = nil
 
-        // Show cached data immediately if available
+        // Show cached data immediately
         let key = cacheKey(for: newDate)
         if let cached = eventCache[key] {
             displayedEvents = cached
-        } else {
-            isLoadingEvents = true
         }
 
-        // Debounce: if user clicks rapidly, only fetch for the final date
+        // Debounce rapid clicks
         navigationDebounce?.cancel()
         navigationDebounce = Just(newDate)
-            .delay(for: .milliseconds(250), scheduler: RunLoop.main)
+            .delay(for: .milliseconds(200), scheduler: RunLoop.main)
             .sink { [weak self] date in
-                self?.fetchAndCacheDate(date, updateDisplay: true)
+                self?.fetchForDate(date)
                 self?.prefetchAround(date)
             }
     }
@@ -127,13 +118,11 @@ final class CalendarViewModel: ObservableObject {
     func goToToday() {
         selectedDate = .now
         selectedEvent = nil
-
         let key = cacheKey(for: .now)
         if let cached = eventCache[key] {
             displayedEvents = cached
         }
-
-        fetchAndCacheDate(.now, updateDisplay: true)
+        fetchForDate(.now)
     }
 
     func authenticate() {
@@ -148,52 +137,67 @@ final class CalendarViewModel: ObservableObject {
     }
 
     func fetchEvents() {
-        invalidateCacheAndRefresh()
+        refreshAll()
     }
 
     func rescheduleNotifications() {
         notificationService.scheduleNotifications(for: todayEvents)
     }
 
-    // MARK: - Private
+    // MARK: - Private: Single fetch path
 
     private func cacheKey(for date: Date) -> String {
         Self.cacheDateFormatter.string(from: date)
     }
 
-    private func initialFetch() {
-        // Fetch today + prefetch ±1 day
-        fetchAndCacheDate(.now, updateDisplay: true)
-        fetchTodayEvents()
-        prefetchAround(.now)
-    }
-
-    private func invalidateCacheAndRefresh() {
+    /// Main refresh — fetches today + selected date, updates everything
+    private func refreshAll() {
+        guard !isFetching else { return }
+        isFetching = true
         eventCache.removeAll()
-        fetchTodayEvents()
-        fetchAndCacheDate(selectedDate, updateDisplay: true)
-        prefetchAround(selectedDate)
-    }
 
-    private func fetchTodayEvents() {
         Task { @MainActor in
-            let events = await fetchMergedEvents(for: .now)
-            self.todayEvents = events
-            let key = cacheKey(for: .now)
-            self.eventCache[key] = events
+            // Always fetch today first
+            let todayKey = cacheKey(for: .now)
+            let todayResult = await fetchMergedEvents(for: .now)
+            todayEvents = todayResult
+            eventCache[todayKey] = todayResult
+            notificationService.scheduleNotifications(for: todayResult)
+
+            // If viewing today, update display
+            if cacheKey(for: selectedDate) == todayKey {
+                displayedEvents = todayResult
+            } else {
+                // Fetch selected date separately
+                let selectedKey = cacheKey(for: selectedDate)
+                let selectedResult = await fetchMergedEvents(for: selectedDate)
+                eventCache[selectedKey] = selectedResult
+                if cacheKey(for: self.selectedDate) == selectedKey {
+                    displayedEvents = selectedResult
+                }
+            }
+
+            isFetching = false
+            prefetchAround(selectedDate)
         }
     }
 
-    private func fetchAndCacheDate(_ date: Date, updateDisplay: Bool) {
+    /// Fetch a single date and update display if still selected
+    private func fetchForDate(_ date: Date) {
         let key = cacheKey(for: date)
         Task { @MainActor in
             let events = await fetchMergedEvents(for: date)
-            self.eventCache[key] = events
+            eventCache[key] = events
 
-            // Only update display if this is still the selected date
-            if updateDisplay && cacheKey(for: self.selectedDate) == key {
-                self.displayedEvents = events
-                self.isLoadingEvents = false
+            // Update display only if this date is still selected
+            if cacheKey(for: self.selectedDate) == key {
+                displayedEvents = events
+            }
+
+            // If this is today, also update todayEvents
+            if cacheKey(for: .now) == key {
+                todayEvents = events
+                notificationService.scheduleNotifications(for: events)
             }
         }
     }
@@ -204,7 +208,10 @@ final class CalendarViewModel: ObservableObject {
             if let d = calendar.date(byAdding: .day, value: offset, to: date) {
                 let key = cacheKey(for: d)
                 if eventCache[key] == nil {
-                    fetchAndCacheDate(d, updateDisplay: false)
+                    Task { @MainActor in
+                        let events = await fetchMergedEvents(for: d)
+                        eventCache[key] = events
+                    }
                 }
             }
         }
@@ -234,6 +241,8 @@ final class CalendarViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Timers
+
     private func startTimer() {
         timer = Timer.publish(every: 1, on: .main, in: .common)
             .autoconnect()
@@ -245,7 +254,7 @@ final class CalendarViewModel: ObservableObject {
             .autoconnect()
             .sink { [weak self] _ in
                 guard let self, self.isAuthenticated else { return }
-                self.invalidateCacheAndRefresh()
+                self.refreshAll()
             }
     }
 
