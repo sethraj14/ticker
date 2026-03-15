@@ -98,7 +98,7 @@ struct DayTimelineView: View {
                 onSelectEvent(layoutEvent.event)
             }
             .frame(width: columnWidth - 2, height: height)
-            .offset(x: xOffset, y: yOffset)
+            .offset(x: xOffset, y: yOffset + 1)
         }
     }
 

@@ -23,7 +23,7 @@ struct MeetingBlockView: View {
                     .foregroundStyle(.secondary)
             }
             .padding(.leading, 5)
-            .padding(.vertical, 2)
+            .padding(.vertical, 1)
 
             Spacer(minLength: 2)
 
