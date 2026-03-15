@@ -7,45 +7,50 @@ struct MeetingBlockView: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 3) {
+            // Left color bar
+            RoundedRectangle(cornerRadius: 1.5)
+                .fill(event.calendarColor)
+                .frame(width: 3)
+                .padding(.vertical, 2)
+
+            VStack(alignment: .leading, spacing: 1) {
                 Text(event.title)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(size: 11, weight: .semibold))
                     .lineLimit(1)
 
-                Text(event.timeRangeLabel)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.white.opacity(0.8))
+                Text(event.startTimeLabel)
+                    .font(.system(size: 9))
+                    .foregroundStyle(.secondary)
             }
-            .padding(.leading, 10)
+            .padding(.leading, 5)
+            .padding(.vertical, 2)
 
-            Spacer(minLength: 4)
+            Spacer(minLength: 2)
 
             if let url = event.meetingURL {
                 Button {
                     NSWorkspace.shared.open(url)
                 } label: {
                     Image(systemName: "video.fill")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.white)
-                        .frame(width: 32, height: 32)
-                        .background(.white.opacity(0.2))
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                        .font(.system(size: 9))
+                        .foregroundStyle(event.calendarColor)
+                        .frame(width: 22, height: 22)
+                        .background(.background.opacity(0.8))
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
                 }
                 .buttonStyle(.plain)
-                .padding(.trailing, 8)
+                .padding(.trailing, 4)
             }
         }
-        .padding(.vertical, 4)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(
-            RoundedRectangle(cornerRadius: 6)
-                .fill(event.calendarColor.opacity(isSelected ? 0.9 : 0.75))
+            RoundedRectangle(cornerRadius: 4)
+                .fill(event.calendarColor.opacity(isSelected ? 0.2 : 0.12))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 6)
-                .strokeBorder(.white.opacity(isSelected ? 0.4 : 0), lineWidth: 2)
+            RoundedRectangle(cornerRadius: 4)
+                .strokeBorder(event.calendarColor.opacity(isSelected ? 0.6 : 0.3), lineWidth: 1)
         )
-        .foregroundStyle(.white)
         .contentShape(Rectangle())
         .onTapGesture {
             onTap()

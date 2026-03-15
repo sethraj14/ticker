@@ -280,18 +280,31 @@ final class CalendarViewModel: ObservableObject {
             return
         }
 
+        // Count events starting at the same time as next
+        let sameTimeCount = todayEvents.filter {
+            !$0.isAllDay && $0.endDate > Date.now &&
+            abs($0.startDate.timeIntervalSince(next.startDate)) < 60
+        }.count
+
         let diff = next.startDate.timeIntervalSinceNow
+        let label: String
+
+        if sameTimeCount > 1 {
+            label = "\(sameTimeCount) events"
+        } else {
+            label = next.title
+        }
 
         if diff <= 0 {
-            menuBarLabel = "\(next.title) NOW"
+            menuBarLabel = "\(label) NOW"
         } else if diff < 60 {
-            menuBarLabel = "\(next.title) in \(Int(diff))s"
+            menuBarLabel = "\(label) in \(Int(diff))s"
         } else if diff < 3600 {
-            menuBarLabel = "\(next.title) in \(Int(diff / 60))m"
+            menuBarLabel = "\(label) in \(Int(diff / 60))m"
         } else {
             let hours = Int(diff / 3600)
             let mins = Int((diff.truncatingRemainder(dividingBy: 3600)) / 60)
-            menuBarLabel = "\(next.title) in \(hours)h \(mins)m"
+            menuBarLabel = "\(label) in \(hours)h \(mins)m"
         }
     }
 }
