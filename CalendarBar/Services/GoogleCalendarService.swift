@@ -231,10 +231,15 @@ final class GoogleCalendarService: ObservableObject {
         timeMax: String,
         timeZone: String
     ) async -> [CalendarEvent] {
-        // Calendar IDs like "en.indian#holiday@group.v.calendar.google.com" need full encoding
+        // Calendar IDs like "en.indian#holiday@group.v.calendar.google.com" need proper encoding
+        // Use URLComponents with percentEncodedPath to avoid double-encoding
         let safeChars = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: ".-_~"))
         let encodedId = calendarId.addingPercentEncoding(withAllowedCharacters: safeChars) ?? calendarId
-        var components = URLComponents(string: "\(calendarBaseURL)/calendars/\(encodedId)/events")!
+
+        var components = URLComponents()
+        components.scheme = "https"
+        components.host = "www.googleapis.com"
+        components.percentEncodedPath = "/calendar/v3/calendars/\(encodedId)/events"
         components.queryItems = [
             URLQueryItem(name: "timeMin", value: timeMin),
             URLQueryItem(name: "timeMax", value: timeMax),
@@ -243,7 +248,8 @@ final class GoogleCalendarService: ObservableObject {
             URLQueryItem(name: "timeZone", value: timeZone),
         ]
 
-        var request = URLRequest(url: components.url!)
+        guard let url = components.url else { return [] }
+        var request = URLRequest(url: url)
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
 
         do {
@@ -252,7 +258,7 @@ final class GoogleCalendarService: ObservableObject {
                 return []
             }
             let eventsResponse = try JSONDecoder().decode(GoogleEventsResponse.self, from: data)
-            return eventsResponse.items.compactMap { item in
+            return (eventsResponse.items ?? []).compactMap { item in
                 parseGoogleEvent(item, calendarColor: calendarColor)
             }
         } catch {
@@ -285,8 +291,6 @@ final class GoogleCalendarService: ObservableObject {
 
         // All-day events use "date" instead of "dateTime"
         let isAllDay = item.start.dateTime == nil && item.start.date != nil
-        // Skip all-day events from timeline
-        guard !isAllDay else { return nil }
 
         let meetingURL = extractMeetingURL(from: item)
         let attendees = item.attendees?.compactMap { $0.displayName ?? $0.email } ?? []
@@ -301,7 +305,8 @@ final class GoogleCalendarService: ObservableObject {
             calendarColor: calendarColor,
             attendees: attendees,
             location: item.location,
-            notes: item.description
+            notes: item.description,
+            isAllDay: isAllDay
         )
     }
 
@@ -383,7 +388,7 @@ private struct TokenResponse: Decodable {
 // MARK: - Google Calendar API Types
 
 struct GoogleEventsResponse: Decodable {
-    let items: [GoogleEventItem]
+    let items: [GoogleEventItem]?
 }
 
 struct GoogleEventItem: Decodable {
