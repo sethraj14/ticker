@@ -1,113 +1,134 @@
-# Ticker
+<p align="center">
+  <img src="assets/logo.svg" width="128" height="128" alt="Ticker Logo">
+</p>
 
-**Your meetings, always in sight.**
+<h1 align="center">Ticker</h1>
 
-Ticker is a native macOS menu bar app that keeps your calendar front and center. No more switching tabs to check when your next meeting is — Ticker shows a live countdown right in your menu bar, and a beautiful day view one click away.
+<p align="center">
+  <strong>Your meetings, always in sight.</strong>
+</p>
 
-![macOS 13+](https://img.shields.io/badge/macOS-13%2B-blue) ![Swift 5.9](https://img.shields.io/badge/Swift-5.9-orange) ![License: MIT](https://img.shields.io/badge/License-MIT-green)
+<p align="center">
+  A native macOS menu bar app that shows a live meeting countdown,<br>
+  Google Calendar-style day view, and one-click join — all without leaving your workflow.
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/macOS-13%2B-blue?style=flat-square" alt="macOS 13+">
+  <img src="https://img.shields.io/badge/Swift-5.9-F05138?style=flat-square&logo=swift&logoColor=white" alt="Swift 5.9">
+  <img src="https://img.shields.io/badge/SwiftUI-blue?style=flat-square&logo=apple&logoColor=white" alt="SwiftUI">
+  <img src="https://img.shields.io/github/license/sethraj14/ticker?style=flat-square" alt="MIT License">
+  <img src="https://img.shields.io/github/stars/sethraj14/ticker?style=flat-square" alt="Stars">
+</p>
 
 ---
 
-## Why I Built This
+## The Problem
 
-I was tired of the context switch. Every 30 minutes I'd open Google Calendar in my browser just to check "wait, when's my next meeting?" — and then get sucked into 15 tabs. I wanted something that just *sits there* and tells me what's coming up, without asking for my attention.
+You're deep in code. Or writing a doc. Or in flow state. Then the thought hits:
 
-Apps like Fantastical exist but they're paid, bloated, and do way more than I need. I just wanted:
-- A countdown in my menu bar
-- A quick glance at my day
-- A "Join" button when it's time
+> *"Wait, when's my next meeting?"*
 
-So I built Ticker. It's fast, native, free, and open source.
+You open Google Calendar in a browser tab. That tab leads to another tab. Now you're reading emails. 15 minutes gone. Meeting starts in 2 minutes and you almost missed it.
+
+**Ticker fixes this.** It sits in your menu bar, silently counting down. When it's time, you click "Join." That's it.
+
+---
+
+## How It Works
+
+```
+Menu Bar:  "Standup in 23m"  →  "Standup in 45s"  →  "Standup NOW"
+                                    │
+                              [click menu bar]
+                                    │
+                    ┌───────────────────────────────────┐
+                    │   ◀  Today, Mar 15  ▶             │
+                    │───────────────────────────────────│
+                    │   Rama Navami              All day │ ← holidays
+                    │───────────────────────────────────│
+                    │   9 AM ┌──────────────────┐       │
+                    │        │ Team Standup  ▶   │       │ ← tap to select
+                    │  10 AM └──────────────────┘       │
+                    │        ───── 🔴 now ──────        │ ← current time
+                    │  11 AM ┌──────────────────┐       │
+                    │        │ Design Review ▶  │       │
+                    │  12 PM └──────────────────┘       │
+                    │───────────────────────────────────│
+                    │  ▶ UP NEXT                        │
+                    │  Design Review · 11:00 AM  [Join] │ ← one click join
+                    │───────────────────────────────────│
+                    │  ⚙ Settings              Quit     │
+                    └───────────────────────────────────┘
+```
 
 ---
 
 ## Features
 
-**Menu Bar Countdown**
-- Shows `"Standup in 23m"` right in your menu bar
-- Ticks every second when under a minute: `"Standup in 45s"`
-- Shows a calendar icon when there are no upcoming meetings
+### Live Countdown
+Your next meeting name + countdown, right in the menu bar. Switches to per-second ticking when under a minute. Shows a calendar icon when your day is clear.
 
-**Day View**
-- Google Calendar-style vertical timeline
-- Meeting blocks sized proportional to duration
-- Color-coded by calendar
-- Red "now" line showing current time
-- Navigate between days with back/next
-- Today/Yesterday/Tomorrow labels
+### Day View
+A vertical timeline that looks and feels like Google Calendar. Meeting blocks are sized by duration, color-coded by calendar, and scrollable across all 24 hours. Red "now" line shows where you are.
 
-**All Your Calendars**
-- Primary, shared, subscribed calendars
-- Holidays (Indian holidays, etc.)
-- Apple Calendar integration (optional)
-- Color-coded per calendar source
+### All Your Calendars
+Fetches from **every** Google Calendar you have — primary, work, shared, subscribed, and holidays. Each one color-coded with its Google Calendar color. Optional Apple Calendar integration too.
 
-**Join Meetings**
-- Video icon on each meeting block to join instantly
-- Click any meeting to see it in the join section
-- Bottom bar shows next up with a prominent "Join" button
-- Opens Google Meet, Zoom, or Teams links
+### One-Click Join
+Video icon on every meeting block. Tap any meeting to see it in the "Up Next" section with a big blue "Join" button. Works with Google Meet, Zoom, and Microsoft Teams links.
 
-**Notifications**
-- Native macOS notifications before meetings
-- Configurable reminder times (default: 10 minutes)
-- "Join Meeting" action button right on the notification
-- Add multiple reminder intervals
+### Smart Notifications
+Native macOS notifications before your meetings. Configurable — set 10 minutes, 5 minutes, or whatever you want. Each notification has a "Join Meeting" action button built in.
 
-**Settings**
-- Google account sign in/out
-- Apple Calendar toggle
-- Configurable notification times
-- Launch at login
+### Fast Navigation
+Slide between days instantly. Ticker prefetches adjacent days in the background so next/prev is instant. Rapid clicking is debounced — only the final day loads.
 
 ---
 
-## Screenshots
+## Quick Start
 
-*Coming soon — the app is minimal and beautiful, trust me.*
+### Prerequisites
+- macOS 13 (Ventura) or later
+- Xcode 15+
+- [XcodeGen](https://github.com/yonaskolb/XcodeGen): `brew install xcodegen`
+- Google Cloud project with Calendar API enabled
 
----
-
-## Installation
-
-### Build from Source
-
-**Requirements:** macOS 13+, Xcode 15+, [XcodeGen](https://github.com/yonaskolb/XcodeGen)
+### Build & Run
 
 ```bash
-# Clone
 git clone https://github.com/sethraj14/ticker.git
 cd ticker
 
-# Install XcodeGen if you don't have it
-brew install xcodegen
-
 # Set up Google OAuth credentials
 cp Ticker/Config.xcconfig.example Ticker/Config.xcconfig
-# Edit Config.xcconfig with your Google OAuth client ID and secret
+# Edit Config.xcconfig with your client ID and secret (see below)
 
-# Generate Xcode project & build
+# Generate Xcode project and build
 xcodegen generate
 xcodebuild -project Ticker.xcodeproj -scheme Ticker -configuration Release build
 
-# Run
+# Run it
 open ~/Library/Developer/Xcode/DerivedData/Ticker-*/Build/Products/Release/Ticker.app
-
-# Or copy to Applications
-cp -r ~/Library/Developer/Xcode/DerivedData/Ticker-*/Build/Products/Release/Ticker.app /Applications/
 ```
 
-### Google OAuth Setup
+### Google OAuth Credentials
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a project (or use existing)
-3. Enable **Google Calendar API**
-4. Create OAuth 2.0 credentials (Desktop app type)
-5. Add your client ID and secret to `Ticker/Config.xcconfig`:
+2. Create a project (or use an existing one)
+3. Enable **Google Calendar API** under APIs & Services
+4. Go to **Credentials** → Create **OAuth 2.0 Client ID** (type: Desktop app)
+5. Copy the client ID and secret into `Ticker/Config.xcconfig`:
 
 ```
-GOOGLE_CLIENT_ID = your-client-id.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET = your-client-secret
+GOOGLE_CLIENT_ID = 123456789-abc.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET = GOCSPX-your-secret-here
+```
+
+### Install Permanently
+
+```bash
+cp -r ~/Library/Developer/Xcode/DerivedData/Ticker-*/Build/Products/Release/Ticker.app /Applications/
 ```
 
 ---
@@ -116,49 +137,37 @@ GOOGLE_CLIENT_SECRET = your-client-secret
 
 ```
 Ticker/
-├── TickerApp.swift              # @main — MenuBarExtra with .window style
-├── Views/
-│   ├── PopoverView.swift        # Main popup container
-│   ├── DayTimelineView.swift    # Scrollable 24h timeline with hour grid
-│   ├── MeetingBlockView.swift   # Color-coded meeting blocks
-│   ├── JoinSection.swift        # "Up Next" with Join button
-│   ├── DayNavigationBar.swift   # ◀ Today ▶ header
-│   └── SettingsView.swift       # Accounts, notifications, general
+├── TickerApp.swift              # MenuBarExtra entry point
 ├── ViewModels/
-│   └── CalendarViewModel.swift  # State, timers, caching, fetch logic
+│   └── CalendarViewModel.swift  # State, timers, caching, fetch
 ├── Services/
-│   ├── GoogleCalendarService.swift   # OAuth + Calendar API (all calendars)
-│   ├── EventKitService.swift         # Apple Calendar via EventKit
-│   ├── NotificationService.swift     # UNUserNotificationCenter
-│   └── LoopbackHTTPServer.swift      # OAuth callback server
+│   ├── GoogleCalendarService    # OAuth + Calendar API (all calendars)
+│   ├── EventKitService          # Apple Calendar via EventKit
+│   ├── NotificationService      # Scheduled notifications + join actions
+│   └── LoopbackHTTPServer       # OAuth callback server
+├── Views/
+│   ├── PopoverView              # Main container with pinned header/footer
+│   ├── DayTimelineView          # 24h scrollable timeline
+│   ├── MeetingBlockView         # Color-coded event blocks
+│   ├── JoinSection              # "Up Next" with join button
+│   ├── DayNavigationBar         # Date picker with back/next
+│   └── SettingsView             # Accounts, notifications, general
 ├── Models/
-│   └── CalendarEvent.swift      # Unified event model
+│   └── CalendarEvent            # Unified event model
 └── Helpers/
-    └── KeychainHelper.swift     # File-based token storage
+    └── KeychainHelper           # File-based token storage
 ```
 
-**Key design decisions:**
-- **SwiftUI + MenuBarExtra** — native macOS 13+ API, no AppKit hacks
-- **No dock icon** — `LSUIElement = true`, pure menu bar utility
-- **File-based token storage** — avoids macOS Keychain password popups on unsigned builds
-- **Sliding window cache** — prefetches ±2 days for instant navigation
-- **Debounced navigation** — rapid next/prev clicks only fetch the final date
-- **Concurrent calendar fetching** — all Google calendars fetched in parallel via TaskGroup
+### Design Decisions
 
----
-
-## Tech Stack
-
-| Component | Technology |
-|-----------|-----------|
-| Language | Swift 5.9 |
-| UI | SwiftUI (macOS 13+) |
-| Menu Bar | MenuBarExtra (.window style) |
-| Calendar API | Google Calendar REST v3 |
-| Apple Calendar | EventKit |
-| Auth | OAuth 2.0 PKCE (loopback redirect) |
-| Notifications | UNUserNotificationCenter |
-| Build | XcodeGen |
+| Decision | Why |
+|----------|-----|
+| SwiftUI + MenuBarExtra | Native macOS 13+ API, smallest possible binary |
+| No dock icon | Pure utility — `LSUIElement = true` |
+| File-based token storage | Avoids Keychain password prompts on unsigned builds |
+| Sliding window cache | Prefetch ±2 days for instant navigation |
+| TaskGroup for calendars | All Google calendars fetched concurrently |
+| XcodeGen | Reproducible builds, no `.xcodeproj` conflicts |
 
 ---
 
@@ -166,33 +175,32 @@ Ticker/
 
 - [ ] Multiple Google account support
 - [ ] Calendar selection (show/hide specific calendars)
-- [ ] Keyboard shortcuts (next/prev day, join next meeting)
-- [ ] Custom app icon
+- [ ] Keyboard shortcuts
+- [ ] Custom app icon for menu bar
 - [ ] Homebrew cask distribution
 - [ ] Week view
-- [ ] Meeting conflict detection
+- [ ] Meeting conflict indicators
+- [ ] Drag to reschedule
 
 ---
 
 ## Contributing
 
-Contributions are welcome! This is a personal project I use daily, but if you find it useful:
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions and guidelines.
 
-1. Fork the repo
-2. Create a feature branch (`feat/your-feature`)
-3. Commit with conventional commits
-4. Open a PR
+**TL;DR:** Fork, branch (`feat/your-feature`), commit (conventional commits), PR.
 
 ---
 
-## License
+## Why Open Source?
 
-MIT License. See [LICENSE](LICENSE) for details.
+I built Ticker because I needed it. No app in the market did exactly this — a *focused*, *native*, *free* menu bar calendar that just shows the countdown and lets you join. Fantastical is great but paid and bloated for this use case. MeetingBar comes close but hasn't been updated.
+
+If you also just want to know "when's my next meeting?" without leaving your flow — Ticker is for you. And since it's open source, you can make it exactly what you want.
 
 ---
 
-## Credits
-
-Built by [Rajdeep Gupta](https://github.com/sethraj14) with the help of Claude Code.
-
-*Because checking your calendar shouldn't require opening a browser.*
+<p align="center">
+  <sub>Built by <a href="https://github.com/sethraj14">Rajdeep Gupta</a> with Claude Code.</sub><br>
+  <sub><em>Because checking your calendar shouldn't require opening a browser.</em></sub>
+</p>
