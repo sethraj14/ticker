@@ -141,8 +141,7 @@ final class GoogleCalendarService: ObservableObject {
         guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else { return [] }
 
         let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
-        formatter.timeZone = TimeZone.current
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
 
         var components = URLComponents(string: "\(calendarBaseURL)/calendars/primary/events")!
         components.queryItems = [
@@ -150,6 +149,7 @@ final class GoogleCalendarService: ObservableObject {
             URLQueryItem(name: "timeMax", value: formatter.string(from: endOfDay)),
             URLQueryItem(name: "singleEvents", value: "true"),
             URLQueryItem(name: "orderBy", value: "startTime"),
+            URLQueryItem(name: "timeZone", value: TimeZone.current.identifier),
         ]
 
         var request = URLRequest(url: components.url!)
