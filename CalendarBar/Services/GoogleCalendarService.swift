@@ -27,21 +27,7 @@ final class GoogleCalendarService: ObservableObject {
     private var calendarCacheTime: Date?
 
     private init() {
-        migrateKeychainIfNeeded()
         isAuthenticated = KeychainHelper.loadString(key: refreshTokenKey) != nil
-    }
-
-    // Re-save tokens with kSecAttrAccessibleWhenUnlocked to stop password popups
-    private func migrateKeychainIfNeeded() {
-        let migrated = UserDefaults.standard.bool(forKey: "keychain_migrated_v1")
-        guard !migrated else { return }
-
-        for key in [accessTokenKey, refreshTokenKey, tokenExpiryKey] {
-            if let value = KeychainHelper.loadString(key: key) {
-                _ = KeychainHelper.saveString(key: key, value: value)
-            }
-        }
-        UserDefaults.standard.set(true, forKey: "keychain_migrated_v1")
     }
 
     // MARK: - OAuth Flow

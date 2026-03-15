@@ -131,8 +131,8 @@ struct PopoverView: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
 
             Spacer()
 
@@ -142,8 +142,8 @@ struct PopoverView: View {
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
             .font(.system(size: 12))
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
         }
     }
 }
