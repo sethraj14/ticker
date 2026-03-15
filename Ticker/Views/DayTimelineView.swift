@@ -41,21 +41,22 @@ struct DayTimelineView: View {
     private var hourGrid: some View {
         VStack(spacing: 0) {
             ForEach(startHour..<endHour, id: \.self) { hour in
-                ZStack(alignment: .topLeading) {
-                    // Horizontal line across full width
-                    VStack(spacing: 0) {
-                        Rectangle()
-                            .fill(Color.primary.opacity(0.08))
-                            .frame(height: 1)
-                        Spacer()
-                    }
-
-                    // Hour label positioned to align center with the line
+                HStack(alignment: .top, spacing: 0) {
+                    // Hour label — bottom-aligned to the grid line
                     Text(hourLabel(hour))
                         .font(.system(size: 10))
                         .foregroundStyle(.tertiary)
                         .frame(width: timeColumnWidth - 6, alignment: .trailing)
-                        .offset(y: -6) // center text on the line
+                        .offset(y: -13) // text sits above the line
+
+                    // Horizontal line from after label to right edge
+                    VStack(spacing: 0) {
+                        Rectangle()
+                            .fill(Color.primary.opacity(0.1))
+                            .frame(height: 1)
+                        Spacer()
+                    }
+                    .padding(.leading, 6)
                 }
                 .frame(height: hourHeight)
                 .id(hour)
