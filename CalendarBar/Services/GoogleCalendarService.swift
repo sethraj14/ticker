@@ -142,6 +142,7 @@ final class GoogleCalendarService: ObservableObject {
 
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime]
+        formatter.timeZone = TimeZone.current
 
         var components = URLComponents(string: "\(calendarBaseURL)/calendars/primary/events")!
         components.queryItems = [
