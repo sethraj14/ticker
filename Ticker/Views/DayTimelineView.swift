@@ -38,23 +38,19 @@ struct DayTimelineView: View {
     private var grid: some View {
         VStack(spacing: 0) {
             ForEach(0..<totalHours, id: \.self) { hour in
-                VStack(spacing: 0) {
-                    // Grid line at exact top of each cell
-                    HStack(spacing: 0) {
-                        // Hour label — positioned so baseline sits on the line
-                        Text(hourLabel(hour))
-                            .font(.system(size: 10))
-                            .foregroundStyle(.tertiary)
-                            .frame(width: labelWidth, alignment: .trailing)
+                ZStack(alignment: .topLeading) {
+                    // Grid line at EXACT y=0 of this cell
+                    Rectangle()
+                        .fill(Color.primary.opacity(0.1))
+                        .frame(height: 1)
+                        .padding(.leading, lineStart)
 
-                        // Horizontal line
-                        Rectangle()
-                            .fill(Color.primary.opacity(0.1))
-                            .frame(height: 1)
-                            .padding(.leading, 6)
-                    }
-
-                    Spacer(minLength: 0)
+                    // Hour label sits above the line
+                    Text(hourLabel(hour))
+                        .font(.system(size: 10))
+                        .foregroundStyle(.tertiary)
+                        .frame(width: labelWidth, alignment: .trailing)
+                        .offset(y: -8)
                 }
                 .frame(height: hourHeight)
                 .id(hour)
