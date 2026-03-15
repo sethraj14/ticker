@@ -4,7 +4,7 @@ struct PopoverView: View {
     @ObservedObject var viewModel: CalendarViewModel
 
     var body: some View {
-        VStack(spacing: 0) {
+        Group {
             if viewModel.showSettings {
                 SettingsView(viewModel: viewModel)
             } else if viewModel.isAuthenticated {
@@ -13,6 +13,7 @@ struct PopoverView: View {
                 signInView
             }
         }
+        .frame(width: 340, height: 520)
         .background(.ultraThinMaterial)
     }
 
@@ -26,6 +27,7 @@ struct PopoverView: View {
 
     private var authenticatedView: some View {
         VStack(spacing: 0) {
+            // HEADER — fixed at top
             DayNavigationBar(
                 dateLabel: viewModel.selectedDateLabel,
                 onPrevious: { viewModel.navigateDay(by: -1) },
@@ -35,33 +37,37 @@ struct PopoverView: View {
 
             Divider()
 
-            // All-day events banner
-            if !allDayEvents.isEmpty {
-                AllDayBanner(events: allDayEvents)
-                Divider()
-            }
-
-            if timedEvents.isEmpty && allDayEvents.isEmpty {
-                VStack(spacing: 10) {
-                    Image(systemName: "calendar")
-                        .font(.system(size: 36))
-                        .foregroundStyle(.tertiary)
-                    Text("No events")
-                        .font(.system(size: 14))
-                        .foregroundStyle(.secondary)
+            // MIDDLE — fills remaining space
+            VStack(spacing: 0) {
+                // All-day events banner (inside scrollable area)
+                if !allDayEvents.isEmpty {
+                    AllDayBanner(events: allDayEvents)
+                    Divider()
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .frame(height: 320)
-            } else {
-                DayTimelineView(
-                    events: timedEvents,
-                    selectedEventID: viewModel.selectedEvent?.id,
-                    onSelectEvent: { event in
-                        viewModel.selectEvent(event)
-                    }
-                )
-            }
 
+                if timedEvents.isEmpty && allDayEvents.isEmpty {
+                    VStack(spacing: 10) {
+                        Image(systemName: "calendar")
+                            .font(.system(size: 36))
+                            .foregroundStyle(.tertiary)
+                        Text("No events")
+                            .font(.system(size: 14))
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    DayTimelineView(
+                        events: timedEvents,
+                        selectedEventID: viewModel.selectedEvent?.id,
+                        onSelectEvent: { event in
+                            viewModel.selectEvent(event)
+                        }
+                    )
+                }
+            }
+            .frame(maxHeight: .infinity)
+
+            // FOOTER — fixed at bottom
             Divider()
 
             JoinSection(event: viewModel.joinSectionEvent)
@@ -113,10 +119,9 @@ struct PopoverView: View {
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
                 .font(.system(size: 12))
-                .padding(14)
+                .padding(10)
             }
         }
-        .frame(width: 340, height: 520)
     }
 
     private var bottomBar: some View {
@@ -132,7 +137,7 @@ struct PopoverView: View {
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
             .padding(.horizontal, 12)
-            .padding(.vertical, 6)
+            .padding(.vertical, 5)
 
             Spacer()
 
@@ -143,7 +148,7 @@ struct PopoverView: View {
             .foregroundStyle(.secondary)
             .font(.system(size: 12))
             .padding(.horizontal, 12)
-            .padding(.vertical, 6)
+            .padding(.vertical, 5)
         }
     }
 }

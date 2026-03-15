@@ -7,7 +7,6 @@ struct CalendarBarApp: App {
     var body: some Scene {
         MenuBarExtra {
             PopoverView(viewModel: viewModel)
-                .frame(width: 340, height: 520)
         } label: {
             if viewModel.menuBarLabel == "No meetings" {
                 Image(systemName: "calendar")

@@ -25,7 +25,7 @@ struct DayTimelineView: View {
                 )
                 .clipped()
             }
-            .frame(maxHeight: 330)
+            .frame(maxHeight: .infinity)
             .onAppear {
                 scrollToCurrentTime(proxy: proxy)
             }
