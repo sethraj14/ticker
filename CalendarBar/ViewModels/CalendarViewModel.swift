@@ -6,11 +6,30 @@ final class CalendarViewModel: ObservableObject {
     @Published var selectedDate: Date = .now
     @Published var events: [CalendarEvent] = []
 
+    let googleService = GoogleCalendarService.shared
     private var timer: AnyCancellable?
+    private var refreshTimer: AnyCancellable?
+    private var cancellables = Set<AnyCancellable>()
 
     init() {
-        loadSampleEvents()
         startTimer()
+        startRefreshTimer()
+
+        // Watch for auth state changes
+        googleService.$isAuthenticated
+            .removeDuplicates()
+            .sink { [weak self] isAuth in
+                if isAuth {
+                    self?.fetchEvents()
+                } else {
+                    self?.events = []
+                }
+            }
+            .store(in: &cancellables)
+    }
+
+    var isAuthenticated: Bool {
+        googleService.isAuthenticated
     }
 
     var selectedDateLabel: String {
@@ -22,6 +41,7 @@ final class CalendarViewModel: ObservableObject {
     }
 
     var nextUpcomingEvent: CalendarEvent? {
+        guard Calendar.current.isDateInToday(selectedDate) else { return nil }
         let now = Date.now
         return events
             .filter { $0.endDate > now }
@@ -32,11 +52,29 @@ final class CalendarViewModel: ObservableObject {
     func navigateDay(by offset: Int) {
         if let newDate = Calendar.current.date(byAdding: .day, value: offset, to: selectedDate) {
             selectedDate = newDate
+            fetchEvents()
         }
     }
 
     func goToToday() {
         selectedDate = .now
+        fetchEvents()
+    }
+
+    func authenticate() {
+        googleService.authenticate()
+    }
+
+    func signOut() {
+        googleService.signOut()
+        events = []
+    }
+
+    func fetchEvents() {
+        Task { @MainActor in
+            let fetched = await googleService.fetchEvents(for: selectedDate)
+            self.events = fetched
+        }
     }
 
     private func startTimer() {
@@ -45,7 +83,23 @@ final class CalendarViewModel: ObservableObject {
             .sink { [weak self] _ in self?.updateMenuBarLabel() }
     }
 
+    // Refresh events every 5 minutes
+    private func startRefreshTimer() {
+        refreshTimer = Timer.publish(every: 300, on: .main, in: .common)
+            .autoconnect()
+            .sink { [weak self] _ in
+                guard let self, self.isAuthenticated else { return }
+                self.fetchEvents()
+            }
+    }
+
     private func updateMenuBarLabel() {
+        // Only countdown for today's events
+        guard Calendar.current.isDateInToday(selectedDate) else {
+            menuBarLabel = selectedDate.formatted(.dateTime.month(.abbreviated).day())
+            return
+        }
+
         guard let next = nextUpcomingEvent else {
             menuBarLabel = "No meetings"
             return
@@ -64,57 +118,5 @@ final class CalendarViewModel: ObservableObject {
             let mins = Int((diff.truncatingRemainder(dividingBy: 3600)) / 60)
             menuBarLabel = "\(next.title) in \(hours)h \(mins)m"
         }
-    }
-
-    private func loadSampleEvents() {
-        let calendar = Calendar.current
-        let now = Date.now
-
-        guard let nineAM = calendar.date(bySettingHour: 9, minute: 0, second: 0, of: now),
-              let nineThirty = calendar.date(bySettingHour: 9, minute: 30, second: 0, of: now),
-              let elevenAM = calendar.date(bySettingHour: 11, minute: 0, second: 0, of: now),
-              let noon = calendar.date(bySettingHour: 12, minute: 0, second: 0, of: now),
-              let twoPM = calendar.date(bySettingHour: 14, minute: 0, second: 0, of: now),
-              let threeThirty = calendar.date(bySettingHour: 15, minute: 30, second: 0, of: now)
-        else { return }
-
-        events = [
-            CalendarEvent(
-                id: "1",
-                title: "Team Standup",
-                startDate: nineAM,
-                endDate: nineThirty,
-                meetingURL: URL(string: "https://meet.google.com/abc-defg-hij"),
-                source: .google,
-                calendarColor: .blue,
-                attendees: ["Alice", "Bob", "Charlie"],
-                location: nil,
-                notes: "Daily sync"
-            ),
-            CalendarEvent(
-                id: "2",
-                title: "Design Review",
-                startDate: elevenAM,
-                endDate: noon,
-                meetingURL: URL(string: "https://meet.google.com/xyz-uvwx-rst"),
-                source: .google,
-                calendarColor: .green,
-                attendees: ["Alice", "Diana"],
-                location: nil,
-                notes: "Review new dashboard designs"
-            ),
-            CalendarEvent(
-                id: "3",
-                title: "Sprint Planning",
-                startDate: twoPM,
-                endDate: threeThirty,
-                meetingURL: URL(string: "https://zoom.us/j/123456789"),
-                source: .google,
-                calendarColor: .purple,
-                attendees: ["Full team"],
-                location: "Conference Room B",
-                notes: nil
-            ),
-        ]
     }
 }
