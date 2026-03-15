@@ -35,6 +35,6 @@ struct DayNavigationBar: View {
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 2)
-        .padding(.vertical, 2)
+        .padding(.vertical, 5)
     }
 }

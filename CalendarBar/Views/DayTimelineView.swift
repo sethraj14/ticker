@@ -5,7 +5,7 @@ struct DayTimelineView: View {
     let selectedEventID: String?
     let onSelectEvent: (CalendarEvent) -> Void
 
-    private let hourHeight: CGFloat = 52
+    private let hourHeight: CGFloat = 40
     private let startHour = 0
     private let endHour = 24
     private let timeColumnWidth: CGFloat = 54
