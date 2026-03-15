@@ -16,6 +16,14 @@ struct PopoverView: View {
         .background(.ultraThinMaterial)
     }
 
+    private var timedEvents: [CalendarEvent] {
+        viewModel.displayedEvents.filter { !$0.isAllDay }
+    }
+
+    private var allDayEvents: [CalendarEvent] {
+        viewModel.displayedEvents.filter { $0.isAllDay }
+    }
+
     private var authenticatedView: some View {
         VStack(spacing: 0) {
             DayNavigationBar(
@@ -27,7 +35,13 @@ struct PopoverView: View {
 
             Divider()
 
-            if viewModel.displayedEvents.isEmpty {
+            // All-day events banner
+            if !allDayEvents.isEmpty {
+                AllDayBanner(events: allDayEvents)
+                Divider()
+            }
+
+            if timedEvents.isEmpty && allDayEvents.isEmpty {
                 VStack(spacing: 10) {
                     Image(systemName: "calendar")
                         .font(.system(size: 36))
@@ -40,7 +54,7 @@ struct PopoverView: View {
                 .frame(height: 320)
             } else {
                 DayTimelineView(
-                    events: viewModel.displayedEvents,
+                    events: timedEvents,
                     selectedEventID: viewModel.selectedEvent?.id,
                     onSelectEvent: { event in
                         viewModel.selectEvent(event)
@@ -102,7 +116,7 @@ struct PopoverView: View {
                 .padding(14)
             }
         }
-        .frame(width: 340, height: 500)
+        .frame(width: 340, height: 520)
     }
 
     private var bottomBar: some View {
@@ -118,7 +132,7 @@ struct PopoverView: View {
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
             .padding(.horizontal, 14)
-            .padding(.vertical, 10)
+            .padding(.vertical, 8)
 
             Spacer()
 
@@ -129,7 +143,35 @@ struct PopoverView: View {
             .foregroundStyle(.secondary)
             .font(.system(size: 12))
             .padding(.horizontal, 14)
-            .padding(.vertical, 10)
+            .padding(.vertical, 8)
         }
+    }
+}
+
+// MARK: - All-Day Events Banner
+
+struct AllDayBanner: View {
+    let events: [CalendarEvent]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            ForEach(events) { event in
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(event.calendarColor)
+                        .frame(width: 8, height: 8)
+                    Text(event.title)
+                        .font(.system(size: 12, weight: .medium))
+                        .lineLimit(1)
+                    Spacer()
+                    Text("All day")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 6)
+        .background(.quaternary.opacity(0.3))
     }
 }
