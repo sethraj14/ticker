@@ -36,10 +36,10 @@ final class CalendarViewModel: ObservableObject {
             self?.refreshAll()
         }
 
-        googleService.$isAuthenticated
+        googleService.$accounts
             .removeDuplicates()
-            .sink { [weak self] isAuth in
-                if isAuth {
+            .sink { [weak self] accounts in
+                if !accounts.isEmpty {
                     self?.refreshAll()
                 } else {
                     self?.displayedEvents = []
@@ -125,12 +125,18 @@ final class CalendarViewModel: ObservableObject {
         fetchForDate(.now)
     }
 
-    func authenticate() {
-        googleService.authenticate()
+    func addAccount() {
+        googleService.addAccount()
     }
 
-    func signOut() {
-        googleService.signOut()
+    func removeAccount(_ account: GoogleAccount) {
+        googleService.removeAccount(account)
+        eventCache.removeAll()
+        refreshAll()
+    }
+
+    func signOutAll() {
+        googleService.signOutAll()
         displayedEvents = []
         todayEvents = []
         eventCache.removeAll()

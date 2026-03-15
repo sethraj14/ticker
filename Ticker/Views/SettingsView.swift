@@ -49,44 +49,54 @@ struct SettingsView: View {
                 VStack(alignment: .leading, spacing: 20) {
 
                     // Accounts Section
-                    settingsSection("Accounts") {
-                        VStack(spacing: 10) {
-                            // Google
-                            HStack(spacing: 10) {
-                                Image(systemName: "g.circle.fill")
-                                    .font(.system(size: 22))
-                                    .foregroundStyle(.blue)
+                    settingsSection("Google Accounts") {
+                        VStack(spacing: 8) {
+                            // List connected accounts
+                            ForEach(viewModel.googleService.accounts) { account in
+                                HStack(spacing: 10) {
+                                    Image(systemName: "g.circle.fill")
+                                        .font(.system(size: 20))
+                                        .foregroundStyle(.blue)
 
-                                VStack(alignment: .leading, spacing: 1) {
-                                    Text("Google Calendar")
-                                        .font(.system(size: 13, weight: .medium))
-                                    if viewModel.isAuthenticated {
+                                    VStack(alignment: .leading, spacing: 1) {
+                                        Text(account.email)
+                                            .font(.system(size: 12, weight: .medium))
+                                            .lineLimit(1)
                                         Text("Connected")
-                                            .font(.system(size: 11))
+                                            .font(.system(size: 10))
                                             .foregroundStyle(.green)
                                     }
-                                }
 
-                                Spacer()
+                                    Spacer()
 
-                                if viewModel.isAuthenticated {
-                                    Button("Sign Out") {
-                                        viewModel.signOut()
+                                    Button {
+                                        viewModel.removeAccount(account)
+                                    } label: {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .font(.system(size: 16))
+                                            .foregroundStyle(.secondary)
                                     }
-                                    .font(.system(size: 12))
-                                    .buttonStyle(.bordered)
-                                    .controlSize(.small)
-                                } else {
-                                    Button("Sign In") {
-                                        viewModel.authenticate()
-                                    }
-                                    .font(.system(size: 12))
-                                    .buttonStyle(.borderedProminent)
-                                    .controlSize(.small)
+                                    .buttonStyle(.plain)
                                 }
+                                .padding(10)
+                                .background(RoundedRectangle(cornerRadius: 8).fill(.quaternary.opacity(0.3)))
                             }
-                            .padding(10)
-                            .background(RoundedRectangle(cornerRadius: 8).fill(.quaternary.opacity(0.3)))
+
+                            // Add account button
+                            Button {
+                                viewModel.addAccount()
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "plus.circle.fill")
+                                        .font(.system(size: 16))
+                                    Text("Add Google Account")
+                                        .font(.system(size: 12, weight: .medium))
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 8)
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
 
                             // Apple Calendar
                             HStack(spacing: 10) {

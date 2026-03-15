@@ -4,7 +4,7 @@ import SwiftUI
 final class GoogleCalendarService: ObservableObject {
     static let shared = GoogleCalendarService()
 
-    @Published var isAuthenticated = false
+    @Published var accounts: [GoogleAccount] = []
     @Published var isLoading = false
 
     private let clientId: String = {
@@ -13,26 +13,26 @@ final class GoogleCalendarService: ObservableObject {
     private let clientSecret: String = {
         Bundle.main.object(forInfoDictionaryKey: "GoogleClientSecret") as? String ?? ""
     }()
-    private let scopes = "https://www.googleapis.com/auth/calendar.readonly"
+    private let scopes = "https://www.googleapis.com/auth/calendar.readonly email"
     private let tokenURL = "https://oauth2.googleapis.com/token"
     private let authURL = "https://accounts.google.com/o/oauth2/auth"
     private let calendarBaseURL = "https://www.googleapis.com/calendar/v3"
-
-    private let accessTokenKey = "google_access_token"
-    private let refreshTokenKey = "google_refresh_token"
-    private let tokenExpiryKey = "google_token_expiry"
+    private let userinfoURL = "https://www.googleapis.com/oauth2/v2/userinfo"
 
     private var httpServer: LoopbackHTTPServer?
-    private var cachedCalendars: [GoogleCalendarInfo]?
-    private var calendarCacheTime: Date?
+    private var calendarCacheByAccount: [String: (calendars: [GoogleCalendarInfo], time: Date)] = [:]
 
-    private init() {
-        isAuthenticated = KeychainHelper.loadString(key: refreshTokenKey) != nil
+    var isAuthenticated: Bool {
+        !accounts.isEmpty
     }
 
-    // MARK: - OAuth Flow
+    private init() {
+        accounts = AccountStorage.loadAccounts()
+    }
 
-    func authenticate() {
+    // MARK: - Multi-Account OAuth
+
+    func addAccount() {
         let port = findAvailablePort()
         let redirectURI = "http://127.0.0.1:\(port)"
 
@@ -40,7 +40,7 @@ final class GoogleCalendarService: ObservableObject {
             self?.httpServer?.stop()
             self?.httpServer = nil
             Task { @MainActor in
-                await self?.exchangeCodeForTokens(code: code, redirectURI: redirectURI)
+                await self?.exchangeCodeForNewAccount(code: code, redirectURI: redirectURI)
             }
         }
 
@@ -61,16 +61,23 @@ final class GoogleCalendarService: ObservableObject {
         }
     }
 
-    func signOut() {
-        KeychainHelper.delete(key: accessTokenKey)
-        KeychainHelper.delete(key: refreshTokenKey)
-        KeychainHelper.delete(key: tokenExpiryKey)
-        cachedCalendars = nil
-        calendarCacheTime = nil
-        isAuthenticated = false
+    func removeAccount(_ account: GoogleAccount) {
+        AccountStorage.remove(id: account.id)
+        calendarCacheByAccount.removeValue(forKey: account.id)
+        accounts = AccountStorage.loadAccounts()
     }
 
-    private func exchangeCodeForTokens(code: String, redirectURI: String) async {
+    func signOutAll() {
+        for account in accounts {
+            AccountStorage.remove(id: account.id)
+        }
+        calendarCacheByAccount.removeAll()
+        accounts = []
+    }
+
+    // MARK: - Token Exchange
+
+    private func exchangeCodeForNewAccount(code: String, redirectURI: String) async {
         let params = [
             "code": code,
             "client_id": clientId,
@@ -80,30 +87,66 @@ final class GoogleCalendarService: ObservableObject {
         ]
 
         guard let tokenResponse = await postTokenRequest(params: params) else { return }
-        saveTokens(from: tokenResponse)
+
+        // Fetch user email to identify this account
+        let email = await fetchUserEmail(accessToken: tokenResponse.accessToken) ?? "account-\(accounts.count + 1)"
+
+        let expiry = Date.now.addingTimeInterval(TimeInterval(tokenResponse.expiresIn))
+        let account = GoogleAccount(
+            id: email,
+            email: email,
+            accessToken: tokenResponse.accessToken,
+            refreshToken: tokenResponse.refreshToken ?? "",
+            tokenExpiry: expiry.timeIntervalSince1970
+        )
+
+        AccountStorage.addOrUpdate(account)
+        accounts = AccountStorage.loadAccounts()
     }
 
-    private func refreshAccessToken() async -> Bool {
-        guard let refreshToken = KeychainHelper.loadString(key: refreshTokenKey) else {
-            return false
+    private func fetchUserEmail(accessToken: String) async -> String? {
+        var request = URLRequest(url: URL(string: userinfoURL)!)
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+                return nil
+            }
+            let info = try JSONDecoder().decode(GoogleUserInfo.self, from: data)
+            return info.email
+        } catch {
+            return nil
+        }
+    }
+
+    // MARK: - Token Refresh (per account)
+
+    private func getValidAccessToken(for account: GoogleAccount) async -> String? {
+        if !account.isTokenExpired {
+            return account.accessToken
         }
 
+        // Refresh
         let params = [
-            "refresh_token": refreshToken,
+            "refresh_token": account.refreshToken,
             "client_id": clientId,
             "client_secret": clientSecret,
             "grant_type": "refresh_token",
         ]
 
-        guard let tokenResponse = await postTokenRequest(params: params) else {
-            return false
+        guard let tokenResponse = await postTokenRequest(params: params) else { return nil }
+
+        let expiry = Date.now.addingTimeInterval(TimeInterval(tokenResponse.expiresIn))
+        AccountStorage.updateTokens(id: account.id, accessToken: tokenResponse.accessToken, expiry: expiry.timeIntervalSince1970)
+
+        // Update in-memory
+        if let index = accounts.firstIndex(where: { $0.id == account.id }) {
+            accounts[index].accessToken = tokenResponse.accessToken
+            accounts[index].tokenExpiry = expiry.timeIntervalSince1970
         }
 
-        _ = KeychainHelper.saveString(key: accessTokenKey, value: tokenResponse.accessToken)
-        let expiry = Date.now.addingTimeInterval(TimeInterval(tokenResponse.expiresIn))
-        _ = KeychainHelper.saveString(key: tokenExpiryKey, value: "\(expiry.timeIntervalSince1970)")
-
-        return true
+        return tokenResponse.accessToken
     }
 
     private func postTokenRequest(params: [String: String]) async -> TokenResponse? {
@@ -118,31 +161,16 @@ final class GoogleCalendarService: ObservableObject {
 
         do {
             let (data, _) = try await URLSession.shared.data(for: request)
-            let response = try JSONDecoder().decode(TokenResponse.self, from: data)
-            return response
+            return try JSONDecoder().decode(TokenResponse.self, from: data)
         } catch {
             return nil
         }
     }
 
-    private func saveTokens(from response: TokenResponse) {
-        _ = KeychainHelper.saveString(key: accessTokenKey, value: response.accessToken)
-        if let refresh = response.refreshToken {
-            _ = KeychainHelper.saveString(key: refreshTokenKey, value: refresh)
-        }
-        let expiry = Date.now.addingTimeInterval(TimeInterval(response.expiresIn))
-        _ = KeychainHelper.saveString(key: tokenExpiryKey, value: "\(expiry.timeIntervalSince1970)")
-        isAuthenticated = true
-    }
-
-    // MARK: - Calendar API
+    // MARK: - Fetch Events (all accounts merged)
 
     func fetchEvents(for date: Date) async -> [CalendarEvent] {
-        guard let accessToken = await getValidAccessToken() else { return [] }
-
-        // Use cached calendar list (refreshes every 30 minutes)
-        let calendars = await getCachedCalendarList(accessToken: accessToken)
-        if calendars.isEmpty { return [] }
+        guard !accounts.isEmpty else { return [] }
 
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: date)
@@ -155,18 +183,11 @@ final class GoogleCalendarService: ObservableObject {
         let timeMax = formatter.string(from: endOfDay)
         let tz = TimeZone.current.identifier
 
-        // Fetch events from ALL calendars concurrently
+        // Fetch from ALL accounts concurrently
         return await withTaskGroup(of: [CalendarEvent].self) { group in
-            for cal in calendars {
+            for account in accounts {
                 group.addTask {
-                    await self.fetchEventsFromCalendar(
-                        calendarId: cal.id,
-                        calendarColor: cal.color,
-                        accessToken: accessToken,
-                        timeMin: timeMin,
-                        timeMax: timeMax,
-                        timeZone: tz
-                    )
+                    await self.fetchEventsForAccount(account, timeMin: timeMin, timeMax: timeMax, timeZone: tz)
                 }
             }
 
@@ -178,15 +199,43 @@ final class GoogleCalendarService: ObservableObject {
         }
     }
 
-    private func getCachedCalendarList(accessToken: String) async -> [GoogleCalendarInfo] {
-        // Return cached if less than 30 minutes old
-        if let cached = cachedCalendars, let cacheTime = calendarCacheTime,
-           Date.now.timeIntervalSince(cacheTime) < 1800 {
-            return cached
+    private func fetchEventsForAccount(_ account: GoogleAccount, timeMin: String, timeMax: String, timeZone: String) async -> [CalendarEvent] {
+        guard let accessToken = await getValidAccessToken(for: account) else { return [] }
+
+        let calendars = await getCachedCalendarList(accountId: account.id, accessToken: accessToken)
+        if calendars.isEmpty { return [] }
+
+        return await withTaskGroup(of: [CalendarEvent].self) { group in
+            for cal in calendars {
+                group.addTask {
+                    await self.fetchEventsFromCalendar(
+                        calendarId: cal.id,
+                        calendarColor: cal.color,
+                        accessToken: accessToken,
+                        timeMin: timeMin,
+                        timeMax: timeMax,
+                        timeZone: timeZone
+                    )
+                }
+            }
+
+            var allEvents: [CalendarEvent] = []
+            for await events in group {
+                allEvents.append(contentsOf: events)
+            }
+            return allEvents
+        }
+    }
+
+    // MARK: - Calendar List (cached per account)
+
+    private func getCachedCalendarList(accountId: String, accessToken: String) async -> [GoogleCalendarInfo] {
+        if let cached = calendarCacheByAccount[accountId],
+           Date.now.timeIntervalSince(cached.time) < 1800 {
+            return cached.calendars
         }
         let list = await fetchCalendarList(accessToken: accessToken)
-        cachedCalendars = list
-        calendarCacheTime = .now
+        calendarCacheByAccount[accountId] = (calendars: list, time: .now)
         return list
     }
 
@@ -200,7 +249,6 @@ final class GoogleCalendarService: ObservableObject {
                 return []
             }
             let listResponse = try JSONDecoder().decode(GoogleCalendarListResponse.self, from: data)
-            // Include all non-hidden calendars: primary, holidays, subscribed, etc.
             return listResponse.items
                 .filter { !($0.hidden ?? false) && !($0.deleted ?? false) }
                 .map { GoogleCalendarInfo(from: $0) }
@@ -208,6 +256,8 @@ final class GoogleCalendarService: ObservableObject {
             return []
         }
     }
+
+    // MARK: - Fetch Events from Single Calendar
 
     private func fetchEventsFromCalendar(
         calendarId: String,
@@ -217,8 +267,6 @@ final class GoogleCalendarService: ObservableObject {
         timeMax: String,
         timeZone: String
     ) async -> [CalendarEvent] {
-        // Calendar IDs like "en.indian#holiday@group.v.calendar.google.com" need proper encoding
-        // Use URLComponents with percentEncodedPath to avoid double-encoding
         let safeChars = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: ".-_~"))
         let encodedId = calendarId.addingPercentEncoding(withAllowedCharacters: safeChars) ?? calendarId
 
@@ -252,22 +300,7 @@ final class GoogleCalendarService: ObservableObject {
         }
     }
 
-    private func getValidAccessToken() async -> String? {
-        guard let accessToken = KeychainHelper.loadString(key: accessTokenKey) else {
-            return nil
-        }
-
-        if let expiryString = KeychainHelper.loadString(key: tokenExpiryKey),
-           let expiryTimestamp = Double(expiryString) {
-            let expiry = Date(timeIntervalSince1970: expiryTimestamp)
-            if expiry > Date.now.addingTimeInterval(60) {
-                return accessToken
-            }
-        }
-
-        let refreshed = await refreshAccessToken()
-        return refreshed ? KeychainHelper.loadString(key: accessTokenKey) : nil
-    }
+    // MARK: - Parse
 
     private func parseGoogleEvent(_ item: GoogleEventItem, calendarColor: Color = .blue) -> CalendarEvent? {
         guard let startDate = parseGoogleDateTime(item.start),
@@ -275,7 +308,6 @@ final class GoogleCalendarService: ObservableObject {
             return nil
         }
 
-        // All-day events use "date" instead of "dateTime"
         let isAllDay = item.start.dateTime == nil && item.start.date != nil
 
         let meetingURL = extractMeetingURL(from: item)
@@ -329,25 +361,25 @@ final class GoogleCalendarService: ObservableObject {
     }
 
     private func findAvailablePort() -> UInt16 {
-        let socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)
-        defer { close(socket) }
+        let sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)
+        defer { close(sock) }
 
         var addr = sockaddr_in()
         addr.sin_family = sa_family_t(AF_INET)
         addr.sin_port = 0
         addr.sin_addr.s_addr = INADDR_LOOPBACK.bigEndian
 
-        withUnsafePointer(to: &addr) { ptr in
+        _ = withUnsafePointer(to: &addr) { ptr in
             ptr.withMemoryRebound(to: sockaddr.self, capacity: 1) { sockaddrPtr in
-                bind(socket, sockaddrPtr, socklen_t(MemoryLayout<sockaddr_in>.size))
+                bind(sock, sockaddrPtr, socklen_t(MemoryLayout<sockaddr_in>.size))
             }
         }
 
         var boundAddr = sockaddr_in()
         var addrLen = socklen_t(MemoryLayout<sockaddr_in>.size)
-        withUnsafeMutablePointer(to: &boundAddr) { ptr in
+        _ = withUnsafeMutablePointer(to: &boundAddr) { ptr in
             ptr.withMemoryRebound(to: sockaddr.self, capacity: 1) { sockaddrPtr in
-                getsockname(socket, sockaddrPtr, &addrLen)
+                getsockname(sock, sockaddrPtr, &addrLen)
             }
         }
 
@@ -369,6 +401,12 @@ private struct TokenResponse: Decodable {
         case expiresIn = "expires_in"
         case tokenType = "token_type"
     }
+}
+
+// MARK: - Google User Info
+
+private struct GoogleUserInfo: Decodable {
+    let email: String
 }
 
 // MARK: - Google Calendar API Types

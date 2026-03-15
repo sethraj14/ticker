@@ -144,7 +144,7 @@ struct PopoverView: View {
                     .lineSpacing(2)
 
                 Button {
-                    viewModel.authenticate()
+                    viewModel.addAccount()
                 } label: {
                     HStack(spacing: 8) {
                         Image(systemName: "person.crop.circle.badge.plus")
