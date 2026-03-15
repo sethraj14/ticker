@@ -23,9 +23,25 @@ final class GoogleCalendarService: ObservableObject {
     private let tokenExpiryKey = "google_token_expiry"
 
     private var httpServer: LoopbackHTTPServer?
+    private var cachedCalendars: [GoogleCalendarInfo]?
+    private var calendarCacheTime: Date?
 
     private init() {
+        migrateKeychainIfNeeded()
         isAuthenticated = KeychainHelper.loadString(key: refreshTokenKey) != nil
+    }
+
+    // Re-save tokens with kSecAttrAccessibleWhenUnlocked to stop password popups
+    private func migrateKeychainIfNeeded() {
+        let migrated = UserDefaults.standard.bool(forKey: "keychain_migrated_v1")
+        guard !migrated else { return }
+
+        for key in [accessTokenKey, refreshTokenKey, tokenExpiryKey] {
+            if let value = KeychainHelper.loadString(key: key) {
+                _ = KeychainHelper.saveString(key: key, value: value)
+            }
+        }
+        UserDefaults.standard.set(true, forKey: "keychain_migrated_v1")
     }
 
     // MARK: - OAuth Flow
@@ -63,6 +79,8 @@ final class GoogleCalendarService: ObservableObject {
         KeychainHelper.delete(key: accessTokenKey)
         KeychainHelper.delete(key: refreshTokenKey)
         KeychainHelper.delete(key: tokenExpiryKey)
+        cachedCalendars = nil
+        calendarCacheTime = nil
         isAuthenticated = false
     }
 
@@ -136,8 +154,8 @@ final class GoogleCalendarService: ObservableObject {
     func fetchEvents(for date: Date) async -> [CalendarEvent] {
         guard let accessToken = await getValidAccessToken() else { return [] }
 
-        // Fetch all calendars the user has
-        let calendars = await fetchCalendarList(accessToken: accessToken)
+        // Use cached calendar list (refreshes every 30 minutes)
+        let calendars = await getCachedCalendarList(accessToken: accessToken)
         if calendars.isEmpty { return [] }
 
         let calendar = Calendar.current
@@ -172,6 +190,18 @@ final class GoogleCalendarService: ObservableObject {
             }
             return allEvents.sorted { $0.startDate < $1.startDate }
         }
+    }
+
+    private func getCachedCalendarList(accessToken: String) async -> [GoogleCalendarInfo] {
+        // Return cached if less than 30 minutes old
+        if let cached = cachedCalendars, let cacheTime = calendarCacheTime,
+           Date.now.timeIntervalSince(cacheTime) < 1800 {
+            return cached
+        }
+        let list = await fetchCalendarList(accessToken: accessToken)
+        cachedCalendars = list
+        calendarCacheTime = .now
+        return list
     }
 
     private func fetchCalendarList(accessToken: String) async -> [GoogleCalendarInfo] {
