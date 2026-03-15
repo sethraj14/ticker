@@ -27,24 +27,30 @@ struct PopoverView: View {
 
             Divider()
 
-            if viewModel.events.isEmpty {
-                VStack(spacing: 8) {
+            if viewModel.displayedEvents.isEmpty {
+                VStack(spacing: 10) {
                     Image(systemName: "calendar")
-                        .font(.system(size: 32))
+                        .font(.system(size: 36))
                         .foregroundStyle(.tertiary)
                     Text("No events")
-                        .font(.system(size: 13))
+                        .font(.system(size: 14))
                         .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .frame(height: 320)
             } else {
-                DayTimelineView(events: viewModel.events)
+                DayTimelineView(
+                    events: viewModel.displayedEvents,
+                    selectedEventID: viewModel.selectedEvent?.id,
+                    onSelectEvent: { event in
+                        viewModel.selectEvent(event)
+                    }
+                )
             }
 
             Divider()
 
-            JoinSection(event: viewModel.nextUpcomingEvent)
+            JoinSection(event: viewModel.joinSectionEvent)
 
             Divider()
 
@@ -53,18 +59,18 @@ struct PopoverView: View {
     }
 
     private var signInView: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 20) {
             Spacer()
 
             Image(systemName: "calendar.badge.plus")
-                .font(.system(size: 40))
+                .font(.system(size: 44))
                 .foregroundStyle(.blue)
 
             Text("CalendarBar")
-                .font(.system(size: 18, weight: .semibold))
+                .font(.system(size: 20, weight: .semibold))
 
-            Text("Connect your Google Calendar to see upcoming meetings.")
-                .font(.system(size: 12))
+            Text("Connect your Google Calendar\nto see upcoming meetings.")
+                .font(.system(size: 14))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 24)
@@ -72,11 +78,13 @@ struct PopoverView: View {
             Button {
                 viewModel.authenticate()
             } label: {
-                HStack(spacing: 6) {
+                HStack(spacing: 8) {
                     Image(systemName: "person.crop.circle.badge.plus")
                     Text("Sign in with Google")
                 }
-                .font(.system(size: 13, weight: .medium))
+                .font(.system(size: 14, weight: .medium))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 2)
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
@@ -90,11 +98,11 @@ struct PopoverView: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
-                .font(.caption)
-                .padding(12)
+                .font(.system(size: 12))
+                .padding(14)
             }
         }
-        .frame(width: 320, height: 480)
+        .frame(width: 340, height: 500)
     }
 
     private var bottomBar: some View {
@@ -105,12 +113,12 @@ struct PopoverView: View {
                 }
             } label: {
                 Label("Settings", systemImage: "gear")
-                    .font(.caption)
+                    .font(.system(size: 12))
             }
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
 
             Spacer()
 
@@ -119,9 +127,9 @@ struct PopoverView: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
-            .font(.caption)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .font(.system(size: 12))
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
         }
     }
 }

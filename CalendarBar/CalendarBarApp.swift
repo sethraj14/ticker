@@ -7,7 +7,7 @@ struct CalendarBarApp: App {
     var body: some Scene {
         MenuBarExtra {
             PopoverView(viewModel: viewModel)
-                .frame(width: 320, height: 480)
+                .frame(width: 340, height: 520)
         } label: {
             Text(viewModel.menuBarLabel)
         }

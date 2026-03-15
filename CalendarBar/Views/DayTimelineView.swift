@@ -2,11 +2,13 @@ import SwiftUI
 
 struct DayTimelineView: View {
     let events: [CalendarEvent]
+    let selectedEventID: String?
+    let onSelectEvent: (CalendarEvent) -> Void
 
-    private let hourHeight: CGFloat = 50
+    private let hourHeight: CGFloat = 52
     private let startHour = 0
     private let endHour = 24
-    private let timeColumnWidth: CGFloat = 52
+    private let timeColumnWidth: CGFloat = 54
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -17,13 +19,13 @@ struct DayTimelineView: View {
                     eventBlocks
                 }
                 .frame(
-                    width: 320,
+                    width: 340,
                     height: CGFloat(endHour - startHour) * hourHeight,
                     alignment: .topLeading
                 )
                 .clipped()
             }
-            .frame(maxHeight: 320)
+            .frame(maxHeight: 330)
             .onAppear {
                 scrollToCurrentTime(proxy: proxy)
             }
@@ -35,11 +37,11 @@ struct DayTimelineView: View {
             ForEach(startHour..<endHour, id: \.self) { hour in
                 HStack(alignment: .top, spacing: 0) {
                     Text(hourLabel(hour))
-                        .font(.system(size: 10, design: .monospaced))
+                        .font(.system(size: 11, design: .monospaced))
                         .foregroundStyle(.secondary)
                         .frame(width: timeColumnWidth, alignment: .trailing)
                         .padding(.trailing, 6)
-                        .offset(y: -6)
+                        .offset(y: -7)
 
                     VStack {
                         Divider()
@@ -59,12 +61,12 @@ struct DayTimelineView: View {
                 HStack(spacing: 0) {
                     Circle()
                         .fill(.red)
-                        .frame(width: 8, height: 8)
+                        .frame(width: 9, height: 9)
                         .offset(x: timeColumnWidth - 4)
 
                     Rectangle()
                         .fill(.red)
-                        .frame(height: 1.5)
+                        .frame(height: 2)
                         .offset(x: timeColumnWidth)
                 }
                 .offset(y: yOffset - 4)
@@ -75,14 +77,17 @@ struct DayTimelineView: View {
     private var eventBlocks: some View {
         ForEach(events) { event in
             let yOffset = yPosition(for: event.startDate)
-            let height = max(CGFloat(event.durationMinutes) / 60.0 * hourHeight, 24)
+            let height = max(CGFloat(event.durationMinutes) / 60.0 * hourHeight, 28)
+            let isSelected = selectedEventID == event.id
 
-            MeetingBlockView(event: event)
-                .frame(height: height)
-                .frame(maxWidth: .infinity)
-                .padding(.leading, timeColumnWidth + 8)
-                .padding(.trailing, 8)
-                .offset(y: yOffset)
+            MeetingBlockView(event: event, isSelected: isSelected) {
+                onSelectEvent(event)
+            }
+            .frame(height: height)
+            .frame(maxWidth: .infinity)
+            .padding(.leading, timeColumnWidth + 8)
+            .padding(.trailing, 10)
+            .offset(y: yOffset)
         }
     }
 
