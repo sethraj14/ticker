@@ -89,7 +89,7 @@ struct DayTimelineView: View {
         return ForEach(layoutEvents, id: \.event.id) { layoutEvent in
             let yOffset = yPosition(for: layoutEvent.event.startDate)
             let durationMins = max(layoutEvent.event.durationMinutes, 15)
-            let height = CGFloat(durationMins) / 60.0 * hourHeight
+            let height = CGFloat(durationMins) / 60.0 * hourHeight - 2
             let columnWidth = availableWidth / CGFloat(layoutEvent.totalColumns)
             let xOffset = timeColumnWidth + 8 + columnWidth * CGFloat(layoutEvent.column)
             let isSelected = selectedEventID == layoutEvent.event.id

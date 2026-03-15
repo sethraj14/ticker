@@ -13,7 +13,7 @@ struct TickerApp: App {
             } else {
                 HStack(spacing: 0) {
                     Image(systemName: "timer")
-                    Text("  \(viewModel.menuBarLabel)")
+                    Text(" \(viewModel.menuBarLabel)")
                 }
             }
         }
