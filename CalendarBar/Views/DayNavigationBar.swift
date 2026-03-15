@@ -10,16 +10,17 @@ struct DayNavigationBar: View {
         HStack {
             Button(action: onPrevious) {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold))
+                    .frame(width: 44, height: 36)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .frame(width: 32, height: 32)
 
             Spacer()
 
             Button(action: onToday) {
                 Text(dateLabel)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 13, weight: .semibold))
             }
             .buttonStyle(.plain)
 
@@ -27,12 +28,13 @@ struct DayNavigationBar: View {
 
             Button(action: onNext) {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold))
+                    .frame(width: 44, height: 36)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .frame(width: 32, height: 32)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 4)
     }
 }
