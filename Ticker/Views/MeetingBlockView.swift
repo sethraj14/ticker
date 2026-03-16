@@ -35,7 +35,7 @@ struct MeetingBlockView: View {
                         .font(.system(size: 9))
                         .foregroundStyle(event.calendarColor)
                         .frame(width: 22, height: 22)
-                        .background(.background.opacity(0.8))
+                        .background(.ultraThinMaterial)
                         .clipShape(RoundedRectangle(cornerRadius: 4))
                 }
                 .buttonStyle(.plain)

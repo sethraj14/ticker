@@ -18,6 +18,21 @@ final class NotificationService: NSObject, ObservableObject, UNUserNotificationC
         UNUserNotificationCenter.current().delegate = self
         registerCategories()
         checkAuthorization()
+        migrateDefaultLeadTimes()
+    }
+
+    /// One-time migration: ensure 1-minute lead time exists for existing users
+    private func migrateDefaultLeadTimes() {
+        let migrationKey = "notification_lead_times_v2_migrated"
+        guard !UserDefaults.standard.bool(forKey: migrationKey) else { return }
+        UserDefaults.standard.set(true, forKey: migrationKey)
+
+        var times = leadTimes
+        if !times.contains(1) {
+            times.append(1)
+            times.sort(by: >)
+            leadTimes = times
+        }
     }
 
     // MARK: - Lead Times (user-configurable)
@@ -25,7 +40,7 @@ final class NotificationService: NSObject, ObservableObject, UNUserNotificationC
     var leadTimes: [Int] {
         get {
             let saved = UserDefaults.standard.array(forKey: notificationLeadTimesKey) as? [Int]
-            return saved ?? [10] // default: 10 minutes before
+            return saved ?? [10, 1] // default: 10 minutes and 1 minute before
         }
         set {
             UserDefaults.standard.set(newValue, forKey: notificationLeadTimesKey)
@@ -72,20 +87,27 @@ final class NotificationService: NSObject, ObservableObject, UNUserNotificationC
     // MARK: - Schedule Notifications
 
     func scheduleNotifications(for events: [CalendarEvent]) {
-        // Cancel all existing meeting notifications
-        UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
-        scheduledEventIDs.removeAll()
-
+        let center = UNUserNotificationCenter.current()
         let now = Date.now
 
+        // Build the set of notification IDs we want to exist
+        var desiredIDs: Set<String> = []
+        var requests: [UNNotificationRequest] = []
+
         for event in events {
-            guard event.startDate > now else { continue }
+            guard event.startDate.timeIntervalSince(now) > -1 else { continue }
 
             for leadMinutes in leadTimes {
                 let fireDate = event.startDate.addingTimeInterval(-Double(leadMinutes * 60))
-                guard fireDate > now else { continue }
+                let interval = fireDate.timeIntervalSince(now)
+
+                // Need at least 1 second in the future for UNTimeIntervalNotificationTrigger
+                guard interval >= 1 else { continue }
 
                 let notificationID = "\(event.id)_\(leadMinutes)m"
+                desiredIDs.insert(notificationID)
+
+                // Skip if already scheduled from a previous call
                 guard !scheduledEventIDs.contains(notificationID) else { continue }
 
                 let content = UNMutableNotificationContent()
@@ -93,13 +115,14 @@ final class NotificationService: NSObject, ObservableObject, UNUserNotificationC
                 content.sound = .default
                 content.categoryIdentifier = meetingCategory
 
-                if leadMinutes > 0 {
+                if leadMinutes == 1 {
+                    content.body = "Starting in 60 seconds — get ready to join"
+                    content.interruptionLevel = .timeSensitive
+                } else if leadMinutes > 0 {
                     content.body = "Starts in \(leadMinutes) minutes"
-                    if leadMinutes == 1 {
-                        content.body = "Starts in 1 minute"
-                    }
                 } else {
                     content.body = "Starting now"
+                    content.interruptionLevel = .timeSensitive
                 }
 
                 if let url = event.meetingURL {
@@ -107,24 +130,31 @@ final class NotificationService: NSObject, ObservableObject, UNUserNotificationC
                 }
                 content.userInfo["eventID"] = event.id
 
-                let interval = fireDate.timeIntervalSinceNow
-                guard interval > 0 else { continue }
-
                 let trigger = UNTimeIntervalNotificationTrigger(
                     timeInterval: interval,
                     repeats: false
                 )
 
-                let request = UNNotificationRequest(
+                requests.append(UNNotificationRequest(
                     identifier: notificationID,
                     content: content,
                     trigger: trigger
-                )
-
-                UNUserNotificationCenter.current().add(request)
-                scheduledEventIDs.insert(notificationID)
+                ))
             }
         }
+
+        // Remove only notifications that are no longer needed (e.g. cancelled events)
+        let staleIDs = scheduledEventIDs.subtracting(desiredIDs)
+        if !staleIDs.isEmpty {
+            center.removePendingNotificationRequests(withIdentifiers: Array(staleIDs))
+        }
+
+        // Add new notifications
+        for request in requests {
+            center.add(request)
+        }
+
+        scheduledEventIDs = desiredIDs
     }
 
     // MARK: - UNUserNotificationCenterDelegate

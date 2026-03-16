@@ -79,7 +79,7 @@ struct SettingsView: View {
                                     .buttonStyle(.plain)
                                 }
                                 .padding(10)
-                                .background(RoundedRectangle(cornerRadius: 8).fill(.quaternary.opacity(0.3)))
+                                .background(RoundedRectangle(cornerRadius: 8).fill(.primary.opacity(0.06)))
                             }
 
                             // Add account button
@@ -134,7 +134,7 @@ struct SettingsView: View {
                                 }
                             }
                             .padding(10)
-                            .background(RoundedRectangle(cornerRadius: 8).fill(.quaternary.opacity(0.3)))
+                            .background(RoundedRectangle(cornerRadius: 8).fill(.primary.opacity(0.06)))
                         }
                     }
 
@@ -150,7 +150,7 @@ struct SettingsView: View {
                                     Image(systemName: "bell.fill")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.orange)
-                                    Text("\(minutes) minutes before")
+                                    Text("\(minutes) \(minutes == 1 ? "minute" : "minutes") before")
                                         .font(.system(size: 13))
                                     Spacer()
                                     Button {
@@ -167,7 +167,7 @@ struct SettingsView: View {
                                 }
                                 .padding(.vertical, 4)
                                 .padding(.horizontal, 10)
-                                .background(RoundedRectangle(cornerRadius: 6).fill(.quaternary.opacity(0.3)))
+                                .background(RoundedRectangle(cornerRadius: 6).fill(.primary.opacity(0.06)))
                             }
 
                             HStack(spacing: 8) {
@@ -223,7 +223,7 @@ struct SettingsView: View {
                                     }
                             }
                             .padding(10)
-                            .background(RoundedRectangle(cornerRadius: 8).fill(.quaternary.opacity(0.3)))
+                            .background(RoundedRectangle(cornerRadius: 8).fill(.primary.opacity(0.06)))
                         }
                     }
 

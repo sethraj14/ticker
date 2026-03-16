@@ -31,6 +31,7 @@ final class CalendarViewModel: ObservableObject {
         startRefreshTimer()
         notificationService.requestAuthorization()
         setupWakeObserver()
+        setupCrashProtection()
 
         eventKitService.onEventsChanged = { [weak self] in
             self?.refreshAll()
@@ -48,6 +49,13 @@ final class CalendarViewModel: ObservableObject {
                 }
             }
             .store(in: &cancellables)
+    }
+
+    deinit {
+        timer?.cancel()
+        refreshTimer?.cancel()
+        navigationDebounce?.cancel()
+        cancellables.removeAll()
     }
 
     var isAuthenticated: Bool {
@@ -250,12 +258,14 @@ final class CalendarViewModel: ObservableObject {
     // MARK: - Timers
 
     private func startTimer() {
+        timer?.cancel()
         timer = Timer.publish(every: 1, on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] _ in self?.updateMenuBarLabel() }
     }
 
     private func startRefreshTimer() {
+        refreshTimer?.cancel()
         refreshTimer = Timer.publish(every: 300, on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] _ in
@@ -270,7 +280,35 @@ final class CalendarViewModel: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.goToToday()
+            guard let self else { return }
+            // Reset syncing flag in case a refresh was in-flight when sleep happened
+            self.isSyncing = false
+            // Restart timers (they may have been cancelled on sleep)
+            self.startTimer()
+            self.startRefreshTimer()
+            self.goToToday()
+        }
+    }
+
+    /// Monitors for app termination to cleanly stop timers
+    private func setupCrashProtection() {
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.willSleepNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.timer?.cancel()
+            self?.refreshTimer?.cancel()
+        }
+
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.willTerminateNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.timer?.cancel()
+            self?.refreshTimer?.cancel()
+            self?.cancellables.removeAll()
         }
     }
 
@@ -298,13 +336,21 @@ final class CalendarViewModel: ObservableObject {
         if diff <= 0 {
             menuBarLabel = "\(label) NOW"
         } else if diff < 60 {
-            menuBarLabel = "\(label) in \(Int(diff))s"
+            menuBarLabel = "\(label) - \(Int(ceil(diff)))s left"
         } else if diff < 3600 {
-            menuBarLabel = "\(label) in \(Int(diff / 60))m"
+            // Round to nearest minute (not floor/ceil) for natural feel
+            // 9m 31s -> "10m left", 10m 29s -> "10m left"
+            let mins = Int((diff / 60).rounded())
+            menuBarLabel = "\(label) - \(max(mins, 1))m left"
         } else {
-            let hours = Int(diff / 3600)
-            let mins = Int((diff.truncatingRemainder(dividingBy: 3600)) / 60)
-            menuBarLabel = "\(label) in \(hours)h \(mins)m"
+            let totalMins = Int((diff / 60).rounded())
+            let hours = totalMins / 60
+            let mins = totalMins % 60
+            if mins == 0 {
+                menuBarLabel = "\(label) - \(hours)h left"
+            } else {
+                menuBarLabel = "\(label) - \(hours)h \(mins)m left"
+            }
         }
     }
 }

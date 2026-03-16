@@ -1,4 +1,34 @@
 import SwiftUI
+import AppKit
+
+// MARK: - macOS Frosted Glass Background
+
+struct VisualEffectBackground: NSViewRepresentable {
+    let material: NSVisualEffectView.Material
+    let blendingMode: NSVisualEffectView.BlendingMode
+
+    init(
+        material: NSVisualEffectView.Material = .popover,
+        blendingMode: NSVisualEffectView.BlendingMode = .behindWindow
+    ) {
+        self.material = material
+        self.blendingMode = blendingMode
+    }
+
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+        view.material = material
+        view.blendingMode = blendingMode
+        view.state = .active
+        view.isEmphasized = true
+        return view
+    }
+
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
+        nsView.material = material
+        nsView.blendingMode = blendingMode
+    }
+}
 
 struct PopoverView: View {
     @ObservedObject var viewModel: CalendarViewModel
@@ -14,7 +44,7 @@ struct PopoverView: View {
             }
         }
         .frame(width: 340, height: 520)
-        .background(.ultraThinMaterial)
+        .background(VisualEffectBackground())
     }
 
     private var timedEvents: [CalendarEvent] {
@@ -192,6 +222,7 @@ struct PopoverView: View {
             .foregroundStyle(.secondary)
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
+            .accessibilityLabel("Settings")
 
             Spacer()
 
@@ -212,6 +243,7 @@ struct PopoverView: View {
             .foregroundStyle(.secondary)
             .disabled(viewModel.isSyncing)
             .padding(.vertical, 10)
+            .accessibilityLabel("Refresh events")
 
             Button {
                 NSApplication.shared.terminate(nil)
@@ -223,6 +255,7 @@ struct PopoverView: View {
             .foregroundStyle(.secondary)
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
+            .accessibilityLabel("Quit Ticker")
         }
     }
 }
@@ -248,12 +281,12 @@ struct AllDayBanner: View {
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(RoundedRectangle(cornerRadius: 4).fill(.quaternary.opacity(0.5)))
+                        .background(RoundedRectangle(cornerRadius: 4).fill(.primary.opacity(0.08)))
                 }
             }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
-        .background(.quaternary.opacity(0.15))
+        .background(.ultraThinMaterial)
     }
 }
