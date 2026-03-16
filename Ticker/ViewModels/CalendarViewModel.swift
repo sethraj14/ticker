@@ -318,15 +318,16 @@ final class CalendarViewModel: ObservableObject {
             return
         }
 
+        let now = Date.now
+        let diff = next.startDate.timeIntervalSince(now)
+
         // Count events starting at the same time as next
         let sameTimeCount = todayEvents.filter {
-            !$0.isAllDay && $0.endDate > Date.now &&
+            !$0.isAllDay && $0.endDate > now &&
             abs($0.startDate.timeIntervalSince(next.startDate)) < 60
         }.count
 
-        let diff = next.startDate.timeIntervalSinceNow
         let label: String
-
         if sameTimeCount > 1 {
             label = "\(sameTimeCount) events"
         } else {
@@ -334,22 +335,33 @@ final class CalendarViewModel: ObservableObject {
         }
 
         if diff <= 0 {
-            menuBarLabel = "\(label) NOW"
-        } else if diff < 60 {
-            menuBarLabel = "\(label) - \(Int(ceil(diff)))s left"
-        } else if diff < 3600 {
-            // Round to nearest minute (not floor/ceil) for natural feel
-            // 9m 31s -> "10m left", 10m 29s -> "10m left"
-            let mins = Int((diff / 60).rounded())
-            menuBarLabel = "\(label) - \(max(mins, 1))m left"
-        } else {
-            let totalMins = Int((diff / 60).rounded())
-            let hours = totalMins / 60
-            let mins = totalMins % 60
-            if mins == 0 {
-                menuBarLabel = "\(label) - \(hours)h left"
+            // ONGOING — meeting already started, show time until it ends
+            let remaining = next.endDate.timeIntervalSince(now)
+            if remaining <= 60 {
+                menuBarLabel = "\(label) - \(max(Int(ceil(remaining)), 0))s left"
+            } else if remaining < 3600 {
+                let mins = Int(ceil(remaining / 60))
+                menuBarLabel = "\(label) - \(mins)m left"
             } else {
+                let hours = Int(remaining / 3600)
+                let mins = Int(ceil((remaining.truncatingRemainder(dividingBy: 3600)) / 60))
                 menuBarLabel = "\(label) - \(hours)h \(mins)m left"
+            }
+        } else if diff < 60 {
+            // UPCOMING — under 1 minute, show seconds
+            menuBarLabel = "\(label) in \(Int(ceil(diff)))s"
+        } else if diff < 3600 {
+            // UPCOMING — show minutes (ceil so 9m59s shows "10m" not "9m")
+            let mins = Int(ceil(diff / 60))
+            menuBarLabel = "\(label) in \(mins)m"
+        } else {
+            // UPCOMING — hours + minutes
+            let hours = Int(diff / 3600)
+            let mins = Int(ceil((diff.truncatingRemainder(dividingBy: 3600)) / 60))
+            if mins == 0 {
+                menuBarLabel = "\(label) in \(hours)h"
+            } else {
+                menuBarLabel = "\(label) in \(hours)h \(mins)m"
             }
         }
     }
