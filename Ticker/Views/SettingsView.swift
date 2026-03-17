@@ -197,6 +197,24 @@ struct SettingsView: View {
                         }
                     }
 
+                    // Test Notification
+                    settingsSection("Preview") {
+                        Button {
+                            NotificationWindowController.shared.showTest()
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: "bell.badge")
+                                    .font(.system(size: 13))
+                                Text("Test Notification")
+                                    .font(.system(size: 12, weight: .medium))
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                    }
+
                     // General Section
                     settingsSection("General") {
                         VStack(spacing: 8) {

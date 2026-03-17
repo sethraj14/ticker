@@ -7,7 +7,7 @@ final class FloatingNotificationPanel: NSPanel {
     init(contentRect: NSRect) {
         super.init(
             contentRect: contentRect,
-            styleMask: [.nonactivatingPanel, .fullSizeContentView],
+            styleMask: [.nonactivatingPanel, .fullSizeContentView, .borderless],
             backing: .buffered,
             defer: true
         )
@@ -20,14 +20,10 @@ final class FloatingNotificationPanel: NSPanel {
         titlebarAppearsTransparent = true
         titleVisibility = .hidden
 
-        // Don't show in dock, app switcher, or mission control
         collectionBehavior = [.canJoinAllSpaces, .transient, .ignoresCycle, .fullScreenAuxiliary]
-
-        // Rounded corners on the window
         isReleasedWhenClosed = false
     }
 
-    // Allow the panel to become key for button clicks
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
 }
@@ -55,24 +51,35 @@ final class NotificationWindowController: NSObject, ObservableObject {
 
             self.currentEvent = event
             self.leadMinutes = leadMinutes
+            self.secondsRemaining = max(Int(ceil(event.startDate.timeIntervalSinceNow)), 0)
 
-            // Calculate seconds until meeting starts
-            let diff = event.startDate.timeIntervalSinceNow
-            self.secondsRemaining = max(Int(ceil(diff)), 0)
-
-            // Create or update panel
-            self.setupPanel(event: event, leadMinutes: leadMinutes)
-
-            // Start countdown
+            self.setupPanel()
             self.startCountdown()
 
-            // Auto-dismiss: 30s for 1-min warning, 8s for others
-            let dismissDelay: TimeInterval = leadMinutes <= 1 ? 30 : 8
+            // Auto-dismiss: 45s for 1-min warning, 12s for others
+            let dismissDelay: TimeInterval = leadMinutes <= 1 ? 45 : 12
             self.dismissTimer?.invalidate()
             self.dismissTimer = Timer.scheduledTimer(withTimeInterval: dismissDelay, repeats: false) { [weak self] _ in
                 self?.dismiss()
             }
         }
+    }
+
+    /// Test method — show notification immediately with a sample event
+    func showTest() {
+        let testEvent = CalendarEvent(
+            id: "test-\(UUID().uuidString)",
+            title: "Team Standup",
+            startDate: Date.now.addingTimeInterval(120),
+            endDate: Date.now.addingTimeInterval(1920),
+            meetingURL: URL(string: "https://meet.google.com/test"),
+            source: .google,
+            calendarColor: .blue,
+            attendees: ["John", "Alice"],
+            location: nil,
+            notes: nil
+        )
+        show(event: testEvent, leadMinutes: 2)
     }
 
     func dismiss() {
@@ -83,9 +90,13 @@ final class NotificationWindowController: NSObject, ObservableObject {
             self.countdownTimer?.invalidate()
 
             NSAnimationContext.runAnimationGroup({ context in
-                context.duration = 0.3
-                context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+                context.duration = 0.25
+                context.timingFunction = CAMediaTimingFunction(name: .easeIn)
                 panel.animator().alphaValue = 0
+                // Slide up while fading
+                var frame = panel.frame
+                frame.origin.y += 20
+                panel.animator().setFrame(frame, display: true)
             }, completionHandler: { [weak self] in
                 panel.orderOut(nil)
                 panel.alphaValue = 1
@@ -103,19 +114,21 @@ final class NotificationWindowController: NSObject, ObservableObject {
             }
             let diff = event.startDate.timeIntervalSinceNow
             self.secondsRemaining = max(Int(ceil(diff)), 0)
-
             if self.secondsRemaining <= 0 {
+                // Keep showing "NOW" for 5 more seconds then dismiss
+                DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in
+                    self?.dismiss()
+                }
                 self.countdownTimer?.invalidate()
             }
         }
     }
 
-    private func setupPanel(event: CalendarEvent, leadMinutes: Int) {
-        // Position: top-right of main screen
+    private func setupPanel() {
         guard let screen = NSScreen.main else { return }
-        let panelWidth: CGFloat = 340
-        let panelHeight: CGFloat = 100
-        let padding: CGFloat = 16
+        let panelWidth: CGFloat = 360
+        let panelHeight: CGFloat = 140
+        let padding: CGFloat = 20
 
         let x = screen.visibleFrame.maxX - panelWidth - padding
         let y = screen.visibleFrame.maxY - panelHeight - padding
@@ -124,8 +137,6 @@ final class NotificationWindowController: NSObject, ObservableObject {
 
         if panel == nil {
             panel = FloatingNotificationPanel(contentRect: frame)
-        } else {
-            panel?.setFrame(frame, display: false)
         }
 
         let bannerView = NotificationBannerView(controller: self)
@@ -134,19 +145,26 @@ final class NotificationWindowController: NSObject, ObservableObject {
 
         panel?.contentView = hostingView
 
-        // Animate in
+        // Start above and slide down
+        var startFrame = frame
+        startFrame.origin.y += 30
+        panel?.setFrame(startFrame, display: false)
         panel?.alphaValue = 0
         panel?.orderFrontRegardless()
 
         NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.35
+            context.duration = 0.4
             context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            panel?.animator().setFrame(frame, display: true)
             panel?.animator().alphaValue = 1
         }
+
+        // Play notification sound
+        NSSound(named: .init("Funk"))?.play()
     }
 }
 
-// MARK: - Notification Banner SwiftUI View
+// MARK: - Banner View
 
 struct NotificationBannerView: View {
     @ObservedObject var controller: NotificationWindowController
@@ -160,112 +178,176 @@ struct NotificationBannerView: View {
     }
 
     private func bannerContent(event: CalendarEvent) -> some View {
-        HStack(spacing: 12) {
-            // Left: Color bar + countdown
-            VStack(spacing: 2) {
-                // Countdown circle
-                ZStack {
-                    Circle()
-                        .stroke(event.calendarColor.opacity(0.2), lineWidth: 2.5)
-                        .frame(width: 44, height: 44)
+        HStack(spacing: 0) {
+            // Left: Countdown timer block
+            countdownBlock(event: event)
+                .frame(width: 90)
 
-                    Circle()
-                        .trim(from: 0, to: countdownProgress)
-                        .stroke(event.calendarColor, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
-                        .frame(width: 44, height: 44)
-                        .rotationEffect(.degrees(-90))
-                        .animation(.linear(duration: 1), value: controller.secondsRemaining)
+            // Divider line
+            Rectangle()
+                .fill(.white.opacity(0.1))
+                .frame(width: 1)
+                .padding(.vertical, 16)
 
-                    VStack(spacing: 0) {
-                        Text(countdownText)
-                            .font(.system(size: 13, weight: .bold, design: .monospaced))
-                        if controller.secondsRemaining > 60 {
-                            Text("min")
-                                .font(.system(size: 8, weight: .medium))
-                                .foregroundStyle(.secondary)
-                        } else {
-                            Text("sec")
-                                .font(.system(size: 8, weight: .medium))
-                                .foregroundStyle(.secondary)
-                        }
+            // Right: Event info + actions
+            VStack(alignment: .leading, spacing: 0) {
+                // Header label
+                HStack {
+                    Circle()
+                        .fill(event.calendarColor)
+                        .frame(width: 6, height: 6)
+                    Text(controller.secondsRemaining <= 0 ? "HAPPENING NOW" : "STARTING SOON")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(controller.secondsRemaining <= 0 ? .orange : .white.opacity(0.5))
+                        .tracking(1.2)
+                    Spacer()
+                    // Close button
+                    Button {
+                        controller.dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(.white.opacity(0.4))
+                            .frame(width: 20, height: 20)
+                            .background(.white.opacity(0.08))
+                            .clipShape(Circle())
                     }
+                    .buttonStyle(.plain)
                 }
-            }
+                .padding(.bottom, 8)
 
-            // Center: Event info
-            VStack(alignment: .leading, spacing: 4) {
-                Text(controller.secondsRemaining <= 0 ? "NOW" : "UPCOMING")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(controller.secondsRemaining <= 60 ? event.calendarColor : .secondary)
-                    .tracking(1)
-
+                // Meeting title
                 Text(event.title)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.white)
                     .lineLimit(1)
+                    .padding(.bottom, 4)
 
+                // Time range
                 Text(event.timeRangeLabel)
                     .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-            }
+                    .foregroundStyle(.white.opacity(0.5))
+                    .padding(.bottom, 12)
 
-            Spacer(minLength: 4)
-
-            // Right: Actions
-            VStack(spacing: 6) {
+                // Join button — always visible
                 if let url = event.meetingURL {
                     Button {
                         NSWorkspace.shared.open(url)
                         controller.dismiss()
                     } label: {
-                        HStack(spacing: 4) {
+                        HStack(spacing: 6) {
                             Image(systemName: "video.fill")
-                                .font(.system(size: 10))
-                            Text("Join")
-                                .font(.system(size: 11, weight: .semibold))
+                                .font(.system(size: 11))
+                            Text("Join Meeting")
+                                .font(.system(size: 12, weight: .semibold))
                         }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(event.calendarColor)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(
+                            LinearGradient(
+                                colors: [event.calendarColor, event.calendarColor.opacity(0.8)],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
                         .foregroundStyle(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
                     .buttonStyle(.plain)
+                } else {
+                    // No meeting URL — show time info instead
+                    Text("No meeting link available")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.white.opacity(0.3))
                 }
-
-                Button {
-                    controller.dismiss()
-                } label: {
-                    Text("Dismiss")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
             }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 14)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(
             ZStack {
+                // Dark glass background
                 VisualEffectBackground(material: .hudWindow, blendingMode: .behindWindow)
-                event.calendarColor.opacity(0.05)
+                // Dark overlay for better contrast
+                Color.black.opacity(0.35)
+                // Subtle accent glow at the top
+                LinearGradient(
+                    colors: [event.calendarColor.opacity(0.15), .clear],
+                    startPoint: .top,
+                    endPoint: .center
+                )
             }
         )
-        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .strokeBorder(.white.opacity(0.15), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 16)
+                .strokeBorder(
+                    LinearGradient(
+                        colors: [.white.opacity(0.2), .white.opacity(0.05)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    ),
+                    lineWidth: 1
+                )
         )
-        .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 8)
+        .shadow(color: .black.opacity(0.5), radius: 30, x: 0, y: 10)
     }
 
-    private var countdownText: String {
-        let secs = controller.secondsRemaining
-        if secs <= 0 { return "0" }
-        if secs > 60 {
-            return "\(Int(ceil(Double(secs) / 60)))"
+    // MARK: - Countdown Block
+
+    private func countdownBlock(event: CalendarEvent) -> some View {
+        VStack(spacing: 4) {
+            if controller.secondsRemaining <= 0 {
+                // NOW state
+                Text("NOW")
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundStyle(.orange)
+            } else if controller.secondsRemaining <= 60 {
+                // Seconds countdown
+                Text("\(controller.secondsRemaining)")
+                    .font(.system(size: 36, weight: .bold, design: .monospaced))
+                    .foregroundStyle(.white)
+                    .contentTransition(.numericText())
+                    .animation(.linear(duration: 0.3), value: controller.secondsRemaining)
+
+                Text("seconds")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.4))
+            } else {
+                // Minutes countdown
+                let mins = Int(ceil(Double(controller.secondsRemaining) / 60))
+                Text("\(mins)")
+                    .font(.system(size: 36, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+
+                Text(mins == 1 ? "minute" : "minutes")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.4))
+            }
+
+            // Progress bar
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(.white.opacity(0.1))
+                        .frame(height: 3)
+
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(
+                            controller.secondsRemaining <= 60
+                                ? Color.orange
+                                : event.calendarColor
+                        )
+                        .frame(width: geo.size.width * countdownProgress, height: 3)
+                        .animation(.linear(duration: 1), value: controller.secondsRemaining)
+                }
+            }
+            .frame(height: 3)
+            .padding(.horizontal, 16)
+            .padding(.top, 4)
         }
-        return "\(secs)"
+        .padding(.vertical, 14)
     }
 
     private var countdownProgress: CGFloat {
