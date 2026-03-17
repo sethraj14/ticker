@@ -332,16 +332,26 @@ final class CalendarViewModel: ObservableObject {
 
         let now = Date.now
         let diff = next.startDate.timeIntervalSince(now)
+        let isOngoing = diff <= 0
 
-        // Count events starting at the same time as next
-        let sameTimeCount = todayEvents.filter {
-            !$0.isAllDay && $0.endDate > now &&
-            abs($0.startDate.timeIntervalSince(next.startDate)) < 60
-        }.count
+        // Count concurrent events:
+        // - For ongoing: count ALL currently active meetings (started & not ended)
+        // - For upcoming: count events starting at the same time (within 60s)
+        let concurrentCount: Int
+        if isOngoing {
+            concurrentCount = todayEvents.filter {
+                !$0.isAllDay && $0.startDate <= now && $0.endDate > now
+            }.count
+        } else {
+            concurrentCount = todayEvents.filter {
+                !$0.isAllDay && $0.endDate > now &&
+                abs($0.startDate.timeIntervalSince(next.startDate)) < 60
+            }.count
+        }
 
         let label: String
-        if sameTimeCount > 1 {
-            label = "\(sameTimeCount) events"
+        if concurrentCount > 1 {
+            label = "\(concurrentCount) events"
         } else {
             label = next.title
         }
