@@ -23,6 +23,7 @@
 		D62E6292B41884234A4EA145 /* PopoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 832ECE50357A244FF39E4E0B /* PopoverView.swift */; };
 		F1C57D068B92EA63AC656524 /* DayTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4ECC75D240239A5A1439736 /* DayTimelineView.swift */; };
 		FB41921DC911831AE0AFCC16 /* MeetingBlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A02BAE2A37E08DC21F01263 /* MeetingBlockView.swift */; };
+		A1B2C3D4E5F60718192A3B4C /* NotificationPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7E8F9A0B1C2D3E4F5061728 /* NotificationPanel.swift */; };
 		FBE98AC442B9AC51D8357F1A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 673BBEBD03F5A6673840E4C1 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -35,6 +36,7 @@
 		673BBEBD03F5A6673840E4C1 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		6C92E57803ED04C367DF94CB /* Ticker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Ticker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6E603713A5DA8B577AE65AE6 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		D7E8F9A0B1C2D3E4F5061728 /* NotificationPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationPanel.swift; sourceTree = "<group>"; };
 		6FA4A82A446E12D061F7E94D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		832ECE50357A244FF39E4E0B /* PopoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopoverView.swift; sourceTree = "<group>"; };
 		8A868BC2218CB1B4E41B32E9 /* JoinSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JoinSection.swift; sourceTree = "<group>"; };
@@ -110,6 +112,7 @@
 				F4ECC75D240239A5A1439736 /* DayTimelineView.swift */,
 				8A868BC2218CB1B4E41B32E9 /* JoinSection.swift */,
 				0A02BAE2A37E08DC21F01263 /* MeetingBlockView.swift */,
+				D7E8F9A0B1C2D3E4F5061728 /* NotificationPanel.swift */,
 				832ECE50357A244FF39E4E0B /* PopoverView.swift */,
 				6FA4A82A446E12D061F7E94D /* SettingsView.swift */,
 			);
@@ -214,6 +217,7 @@
 				456228785B55B3E7D41895FA /* LoopbackHTTPServer.swift in Sources */,
 				FB41921DC911831AE0AFCC16 /* MeetingBlockView.swift in Sources */,
 				5A349B391EA6CAF1DA6559C9 /* NotificationService.swift in Sources */,
+				A1B2C3D4E5F60718192A3B4C /* NotificationPanel.swift in Sources */,
 				D62E6292B41884234A4EA145 /* PopoverView.swift in Sources */,
 				5C22D8386C6763AF71ED4C62 /* SettingsView.swift in Sources */,
 				85F87D589E0A2728F73DE5D6 /* TickerApp.swift in Sources */,

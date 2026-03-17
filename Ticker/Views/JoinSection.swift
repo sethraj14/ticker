@@ -5,13 +5,13 @@ struct JoinSection: View {
 
     var body: some View {
         if let event {
-            HStack(spacing: 10) {
+            HStack(spacing: 12) {
                 // Color indicator
                 RoundedRectangle(cornerRadius: 2)
                     .fill(event.calendarColor)
-                    .frame(width: 4, height: 36)
+                    .frame(width: 4, height: 40)
 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 3) {
                     Text("UP NEXT")
                         .font(.system(size: 9, weight: .bold))
                         .foregroundStyle(.secondary)
@@ -26,7 +26,7 @@ struct JoinSection: View {
                         .foregroundStyle(.secondary)
                 }
 
-                Spacer()
+                Spacer(minLength: 8)
 
                 if let url = event.meetingURL {
                     Button {
@@ -34,18 +34,21 @@ struct JoinSection: View {
                     } label: {
                         HStack(spacing: 5) {
                             Image(systemName: "video.fill")
+                                .font(.system(size: 10))
                             Text("Join")
                         }
                         .font(.system(size: 12, weight: .semibold))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 7)
+                        .background(event.calendarColor)
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 7))
                     }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.regular)
+                    .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
         } else {
             HStack(spacing: 8) {
                 Image(systemName: "checkmark.circle")
@@ -56,7 +59,7 @@ struct JoinSection: View {
                     .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
+            .padding(.vertical, 14)
         }
     }
 }

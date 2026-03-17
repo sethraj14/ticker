@@ -8,12 +8,12 @@ struct MeetingBlockView: View {
     var body: some View {
         HStack(spacing: 0) {
             // Left color bar
-            RoundedRectangle(cornerRadius: 1.5)
+            RoundedRectangle(cornerRadius: 2)
                 .fill(event.calendarColor)
                 .frame(width: 3)
-                .padding(.vertical, 2)
+                .padding(.vertical, 3)
 
-            VStack(alignment: .leading, spacing: 1) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(event.title)
                     .font(.system(size: 11, weight: .semibold))
                     .lineLimit(1)
@@ -22,10 +22,10 @@ struct MeetingBlockView: View {
                     .font(.system(size: 9))
                     .foregroundStyle(.secondary)
             }
-            .padding(.leading, 5)
-            .padding(.vertical, 1)
+            .padding(.leading, 6)
+            .padding(.vertical, 3)
 
-            Spacer(minLength: 2)
+            Spacer(minLength: 4)
 
             if let url = event.meetingURL {
                 Button {
@@ -33,10 +33,10 @@ struct MeetingBlockView: View {
                 } label: {
                     Image(systemName: "video.fill")
                         .font(.system(size: 9))
-                        .foregroundStyle(event.calendarColor)
-                        .frame(width: 22, height: 22)
-                        .background(.ultraThinMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                        .foregroundStyle(.white)
+                        .frame(width: 24, height: 24)
+                        .background(event.calendarColor.opacity(0.85))
+                        .clipShape(RoundedRectangle(cornerRadius: 5))
                 }
                 .buttonStyle(.plain)
                 .padding(.trailing, 4)
@@ -44,12 +44,12 @@ struct MeetingBlockView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(
-            RoundedRectangle(cornerRadius: 4)
-                .fill(event.calendarColor.opacity(isSelected ? 0.2 : 0.12))
+            RoundedRectangle(cornerRadius: 5)
+                .fill(event.calendarColor.opacity(isSelected ? 0.18 : 0.1))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 4)
-                .strokeBorder(event.calendarColor.opacity(isSelected ? 0.6 : 0.3), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 5)
+                .strokeBorder(event.calendarColor.opacity(isSelected ? 0.5 : 0.25), lineWidth: 1)
         )
         .contentShape(Rectangle())
         .onTapGesture {

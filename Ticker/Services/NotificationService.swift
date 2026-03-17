@@ -12,6 +12,8 @@ final class NotificationService: NSObject, ObservableObject, UNUserNotificationC
     @Published var isAuthorized = false
 
     private var scheduledEventIDs: Set<String> = []
+    private var panelTimers: [String: Timer] = [:]
+    private var eventStore: [String: CalendarEvent] = [:]
 
     override private init() {
         super.init()
@@ -90,6 +92,11 @@ final class NotificationService: NSObject, ObservableObject, UNUserNotificationC
         let center = UNUserNotificationCenter.current()
         let now = Date.now
 
+        // Store events for custom panel lookup
+        for event in events {
+            eventStore[event.id] = event
+        }
+
         // Build the set of notification IDs we want to exist
         var desiredIDs: Set<String> = []
         var requests: [UNNotificationRequest] = []
@@ -101,7 +108,7 @@ final class NotificationService: NSObject, ObservableObject, UNUserNotificationC
                 let fireDate = event.startDate.addingTimeInterval(-Double(leadMinutes * 60))
                 let interval = fireDate.timeIntervalSince(now)
 
-                // Need at least 1 second in the future for UNTimeIntervalNotificationTrigger
+                // Need at least 1 second in the future
                 guard interval >= 1 else { continue }
 
                 let notificationID = "\(event.id)_\(leadMinutes)m"
@@ -110,6 +117,7 @@ final class NotificationService: NSObject, ObservableObject, UNUserNotificationC
                 // Skip if already scheduled from a previous call
                 guard !scheduledEventIDs.contains(notificationID) else { continue }
 
+                // Schedule system notification (fallback for when app isn't focused)
                 let content = UNMutableNotificationContent()
                 content.title = event.title
                 content.sound = .default
@@ -129,6 +137,7 @@ final class NotificationService: NSObject, ObservableObject, UNUserNotificationC
                     content.userInfo["meetingURL"] = url.absoluteString
                 }
                 content.userInfo["eventID"] = event.id
+                content.userInfo["leadMinutes"] = leadMinutes
 
                 let trigger = UNTimeIntervalNotificationTrigger(
                     timeInterval: interval,
@@ -140,16 +149,29 @@ final class NotificationService: NSObject, ObservableObject, UNUserNotificationC
                     content: content,
                     trigger: trigger
                 ))
+
+                // Schedule custom floating panel timer
+                let eventID = event.id
+                let lead = leadMinutes
+                let timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
+                    guard let self, let storedEvent = self.eventStore[eventID] else { return }
+                    NotificationWindowController.shared.show(event: storedEvent, leadMinutes: lead)
+                }
+                panelTimers[notificationID] = timer
             }
         }
 
-        // Remove only notifications that are no longer needed (e.g. cancelled events)
+        // Remove stale notifications & timers
         let staleIDs = scheduledEventIDs.subtracting(desiredIDs)
         if !staleIDs.isEmpty {
             center.removePendingNotificationRequests(withIdentifiers: Array(staleIDs))
+            for id in staleIDs {
+                panelTimers[id]?.invalidate()
+                panelTimers.removeValue(forKey: id)
+            }
         }
 
-        // Add new notifications
+        // Add new system notifications
         for request in requests {
             center.add(request)
         }
@@ -159,13 +181,14 @@ final class NotificationService: NSObject, ObservableObject, UNUserNotificationC
 
     // MARK: - UNUserNotificationCenterDelegate
 
-    // Show notifications even when app is in foreground
+    // When app is in foreground, suppress system banner (custom panel handles it)
+    // Play sound only — the custom floating panel provides the visual
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-        completionHandler([.banner, .sound])
+        completionHandler([.sound])
     }
 
     // Handle notification actions
