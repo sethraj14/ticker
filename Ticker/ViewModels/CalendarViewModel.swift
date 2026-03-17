@@ -76,12 +76,24 @@ final class CalendarViewModel: ObservableObject {
         return selectedDate.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())
     }
 
+    /// Priority logic: if an upcoming meeting starts within 10 minutes,
+    /// show it instead of an ongoing meeting (it's more actionable).
     var nextUpcomingEvent: CalendarEvent? {
         let now = Date.now
-        return todayEvents
+        let activeEvents = todayEvents
             .filter { $0.endDate > now && !$0.isAllDay }
             .sorted { $0.startDate < $1.startDate }
-            .first
+
+        // Find the next event that hasn't started yet
+        let upcoming = activeEvents.first { $0.startDate > now }
+
+        // If an upcoming event starts within 10 minutes, prioritize it
+        if let upcoming, upcoming.startDate.timeIntervalSince(now) <= 600 {
+            return upcoming
+        }
+
+        // Otherwise show the earliest active event (ongoing or upcoming)
+        return activeEvents.first
     }
 
     var joinSectionEvent: CalendarEvent? {
