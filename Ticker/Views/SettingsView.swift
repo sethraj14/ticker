@@ -22,6 +22,7 @@ struct SettingsView: View {
                         Text("Back")
                             .font(.system(size: 13))
                     }
+                    .foregroundStyle(.white.opacity(0.5))
                     .frame(height: 30)
                     .contentShape(Rectangle())
                 }
@@ -31,6 +32,7 @@ struct SettingsView: View {
 
                 Text("Settings")
                     .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.9))
 
                 Spacer()
 
@@ -41,30 +43,32 @@ struct SettingsView: View {
                     .padding(.leading, 16)
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 6)
+            .padding(.vertical, 8)
 
-            Divider()
+            Rectangle()
+                .fill(.white.opacity(0.08))
+                .frame(height: 1)
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 22) {
 
                     // Accounts Section
                     settingsSection("Google Accounts") {
                         VStack(spacing: 8) {
-                            // List connected accounts
                             ForEach(viewModel.googleService.accounts) { account in
                                 HStack(spacing: 10) {
                                     Image(systemName: "g.circle.fill")
                                         .font(.system(size: 20))
                                         .foregroundStyle(.blue)
 
-                                    VStack(alignment: .leading, spacing: 1) {
+                                    VStack(alignment: .leading, spacing: 2) {
                                         Text(account.email)
                                             .font(.system(size: 12, weight: .medium))
+                                            .foregroundStyle(.white.opacity(0.8))
                                             .lineLimit(1)
                                         Text("Connected")
                                             .font(.system(size: 10))
-                                            .foregroundStyle(.green)
+                                            .foregroundStyle(.green.opacity(0.7))
                                     }
 
                                     Spacer()
@@ -72,44 +76,49 @@ struct SettingsView: View {
                                     Button {
                                         viewModel.removeAccount(account)
                                     } label: {
-                                        Image(systemName: "xmark.circle.fill")
-                                            .font(.system(size: 16))
-                                            .foregroundStyle(.secondary)
+                                        Image(systemName: "xmark")
+                                            .font(.system(size: 10, weight: .bold))
+                                            .foregroundStyle(.white.opacity(0.3))
+                                            .frame(width: 22, height: 22)
+                                            .background(.white.opacity(0.08))
+                                            .clipShape(Circle())
                                     }
                                     .buttonStyle(.plain)
                                 }
-                                .padding(10)
-                                .background(RoundedRectangle(cornerRadius: 8).fill(.primary.opacity(0.06)))
+                                .padding(12)
+                                .background(RoundedRectangle(cornerRadius: 10).fill(.white.opacity(0.06)))
                             }
 
-                            // Add account button
                             Button {
                                 viewModel.addAccount()
                             } label: {
                                 HStack(spacing: 6) {
                                     Image(systemName: "plus.circle.fill")
-                                        .font(.system(size: 16))
+                                        .font(.system(size: 14))
                                     Text("Add Google Account")
                                         .font(.system(size: 12, weight: .medium))
                                 }
+                                .foregroundStyle(.white.opacity(0.5))
                                 .frame(maxWidth: .infinity)
-                                .padding(.vertical, 8)
+                                .padding(.vertical, 10)
+                                .background(RoundedRectangle(cornerRadius: 10).strokeBorder(.white.opacity(0.12), lineWidth: 1))
                             }
-                            .buttonStyle(.bordered)
-                            .controlSize(.small)
+                            .buttonStyle(.plain)
 
                             // Apple Calendar
                             HStack(spacing: 10) {
                                 Image(systemName: "apple.logo")
-                                    .font(.system(size: 20))
+                                    .font(.system(size: 18))
+                                    .foregroundStyle(.white.opacity(0.6))
                                     .frame(width: 22)
 
-                                VStack(alignment: .leading, spacing: 1) {
+                                VStack(alignment: .leading, spacing: 2) {
                                     Text("Apple Calendar")
                                         .font(.system(size: 13, weight: .medium))
+                                        .foregroundStyle(.white.opacity(0.8))
                                     Text(viewModel.eventKitService.isAuthorized ? "Enabled" : "Not connected")
                                         .font(.system(size: 11))
-                                        .foregroundStyle(viewModel.eventKitService.isAuthorized ? .green : .secondary)
+                                        .foregroundStyle(viewModel.eventKitService.isAuthorized ? .green.opacity(0.7) : .white.opacity(0.3))
                                 }
 
                                 Spacer()
@@ -128,13 +137,13 @@ struct SettingsView: View {
                                     Button("Enable") {
                                         viewModel.eventKitService.requestAccess()
                                     }
-                                    .font(.system(size: 12))
-                                    .buttonStyle(.bordered)
-                                    .controlSize(.small)
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundStyle(.blue)
+                                    .buttonStyle(.plain)
                                 }
                             }
-                            .padding(10)
-                            .background(RoundedRectangle(cornerRadius: 8).fill(.primary.opacity(0.06)))
+                            .padding(12)
+                            .background(RoundedRectangle(cornerRadius: 10).fill(.white.opacity(0.06)))
                         }
                     }
 
@@ -143,15 +152,16 @@ struct SettingsView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Remind me before meetings:")
                                 .font(.system(size: 12))
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(.white.opacity(0.4))
 
                             ForEach(viewModel.notificationService.leadTimes, id: \.self) { minutes in
                                 HStack {
                                     Image(systemName: "bell.fill")
                                         .font(.system(size: 11))
-                                        .foregroundStyle(.orange)
+                                        .foregroundStyle(.orange.opacity(0.7))
                                     Text("\(minutes) \(minutes == 1 ? "minute" : "minutes") before")
                                         .font(.system(size: 13))
+                                        .foregroundStyle(.white.opacity(0.7))
                                     Spacer()
                                     Button {
                                         var times = viewModel.notificationService.leadTimes
@@ -160,14 +170,14 @@ struct SettingsView: View {
                                         viewModel.rescheduleNotifications()
                                     } label: {
                                         Image(systemName: "minus.circle.fill")
-                                            .foregroundStyle(.red)
+                                            .foregroundStyle(.red.opacity(0.6))
                                             .font(.system(size: 16))
                                     }
                                     .buttonStyle(.plain)
                                 }
-                                .padding(.vertical, 4)
-                                .padding(.horizontal, 10)
-                                .background(RoundedRectangle(cornerRadius: 6).fill(.primary.opacity(0.06)))
+                                .padding(.vertical, 6)
+                                .padding(.horizontal, 12)
+                                .background(RoundedRectangle(cornerRadius: 8).fill(.white.opacity(0.06)))
                             }
 
                             HStack(spacing: 8) {
@@ -188,16 +198,16 @@ struct SettingsView: View {
                                         newLeadTime = ""
                                     }
                                 }
-                                .font(.system(size: 12))
-                                .buttonStyle(.bordered)
-                                .controlSize(.small)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(.blue)
+                                .buttonStyle(.plain)
                                 .disabled(Int(newLeadTime) == nil)
                             }
                             .padding(.top, 4)
                         }
                     }
 
-                    // Test Notification
+                    // Preview Section
                     settingsSection("Preview") {
                         Button {
                             NotificationWindowController.shared.showTest()
@@ -208,11 +218,13 @@ struct SettingsView: View {
                                 Text("Test Notification")
                                     .font(.system(size: 12, weight: .medium))
                             }
+                            .foregroundStyle(.white.opacity(0.6))
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 8)
+                            .padding(.vertical, 10)
+                            .background(RoundedRectangle(cornerRadius: 10).fill(.white.opacity(0.06)))
+                            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(.white.opacity(0.1), lineWidth: 1))
                         }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
+                        .buttonStyle(.plain)
                     }
 
                     // General Section
@@ -221,9 +233,11 @@ struct SettingsView: View {
                             HStack {
                                 Image(systemName: "sunrise")
                                     .font(.system(size: 13))
+                                    .foregroundStyle(.white.opacity(0.5))
                                     .frame(width: 20)
                                 Text("Launch at login")
                                     .font(.system(size: 13))
+                                    .foregroundStyle(.white.opacity(0.7))
                                 Spacer()
                                 Toggle("", isOn: $launchAtLogin)
                                     .toggleStyle(.switch)
@@ -240,8 +254,8 @@ struct SettingsView: View {
                                         }
                                     }
                             }
-                            .padding(10)
-                            .background(RoundedRectangle(cornerRadius: 8).fill(.primary.opacity(0.06)))
+                            .padding(12)
+                            .background(RoundedRectangle(cornerRadius: 10).fill(.white.opacity(0.06)))
                         }
                     }
 
@@ -250,23 +264,23 @@ struct SettingsView: View {
                         Spacer()
                         Text("Ticker v0.1.0")
                             .font(.system(size: 11))
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(.white.opacity(0.15))
                         Spacer()
                     }
                     .padding(.top, 4)
                 }
-                .padding(14)
+                .padding(16)
             }
         }
         .frame(width: 340, height: 520)
     }
 
     private func settingsSection<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             Text(title.uppercased())
-                .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(.secondary)
-                .tracking(0.8)
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(.white.opacity(0.3))
+                .tracking(1)
 
             content()
         }

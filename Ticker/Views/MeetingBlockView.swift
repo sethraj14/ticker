@@ -16,11 +16,12 @@ struct MeetingBlockView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(event.title)
                     .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.9))
                     .lineLimit(1)
 
                 Text(event.startTimeLabel)
                     .font(.system(size: 9))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.white.opacity(0.4))
             }
             .padding(.leading, 6)
             .padding(.vertical, 3)
@@ -35,7 +36,7 @@ struct MeetingBlockView: View {
                         .font(.system(size: 9))
                         .foregroundStyle(.white)
                         .frame(width: 24, height: 24)
-                        .background(event.calendarColor.opacity(0.85))
+                        .background(event.calendarColor.opacity(0.8))
                         .clipShape(RoundedRectangle(cornerRadius: 5))
                 }
                 .buttonStyle(.plain)
@@ -44,12 +45,12 @@ struct MeetingBlockView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(
-            RoundedRectangle(cornerRadius: 5)
-                .fill(event.calendarColor.opacity(isSelected ? 0.18 : 0.1))
+            RoundedRectangle(cornerRadius: 6)
+                .fill(event.calendarColor.opacity(isSelected ? 0.2 : 0.1))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 5)
-                .strokeBorder(event.calendarColor.opacity(isSelected ? 0.5 : 0.25), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 6)
+                .strokeBorder(event.calendarColor.opacity(isSelected ? 0.5 : 0.2), lineWidth: 1)
         )
         .contentShape(Rectangle())
         .onTapGesture {

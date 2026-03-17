@@ -65,13 +65,13 @@ final class NotificationWindowController: NSObject, ObservableObject {
         }
     }
 
-    /// Test method — show notification immediately with a sample event
+    /// Test method — show notification with 30s countdown so you can see seconds ticking
     func showTest() {
         let testEvent = CalendarEvent(
             id: "test-\(UUID().uuidString)",
             title: "Team Standup",
-            startDate: Date.now.addingTimeInterval(120),
-            endDate: Date.now.addingTimeInterval(1920),
+            startDate: Date.now.addingTimeInterval(30),
+            endDate: Date.now.addingTimeInterval(1830),
             meetingURL: URL(string: "https://meet.google.com/test"),
             source: .google,
             calendarColor: .blue,
@@ -79,7 +79,7 @@ final class NotificationWindowController: NSObject, ObservableObject {
             location: nil,
             notes: nil
         )
-        show(event: testEvent, leadMinutes: 2)
+        show(event: testEvent, leadMinutes: 1)
     }
 
     func dismiss() {

@@ -99,7 +99,7 @@ struct DayTimelineView: View {
 
             // Horizontal grid line
             Rectangle()
-                .fill(Color.primary.opacity(0.1))
+                .fill(Color.white.opacity(0.06))
                 .frame(width: viewWidth - lineStart, height: 1)
                 .timelinePosition(x: lineStart, y: y)
                 .allowsHitTesting(false)
@@ -107,7 +107,7 @@ struct DayTimelineView: View {
             // Hour label
             Text(hourLabel(hour))
                 .font(.system(size: 10))
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(.white.opacity(0.25))
                 .frame(width: labelWidth, alignment: .trailing)
                 .timelinePosition(x: 0, y: y - 8)
                 .allowsHitTesting(false)
