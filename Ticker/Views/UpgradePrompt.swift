@@ -24,7 +24,7 @@ struct UpgradePrompt: View {
                     NSWorkspace.shared.open(url)
                 }
             } label: {
-                Text("Upgrade — $7.99")
+                Text("Upgrade — \(LicenseManager.priceDisplay)")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 12)

@@ -19,6 +19,7 @@ struct DayNavigationBar: View {
             }
             .buttonStyle(.plain)
             .disabled(!isPro)
+            .accessibilityLabel(isPro ? "Previous day" : "Previous day — requires Pro")
 
             if !isPro {
                 ProBadge()
@@ -36,11 +37,6 @@ struct DayNavigationBar: View {
 
             Spacer()
 
-            if !isPro {
-                ProBadge()
-                    .padding(.trailing, 4)
-            }
-
             Button(action: onNext) {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 12, weight: .semibold))
@@ -51,6 +47,7 @@ struct DayNavigationBar: View {
             }
             .buttonStyle(.plain)
             .disabled(!isPro)
+            .accessibilityLabel(isPro ? "Next day" : "Next day — requires Pro")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)

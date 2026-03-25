@@ -36,13 +36,13 @@ export function Hero({ isProductHunt = false }: HeroProps) {
         </p>
 
         <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-          <a href={SITE.downloadUrl} target="_blank" rel="noopener noreferrer">
+          <a href={SITE.downloadUrl} target="_blank" rel="noopener noreferrer" aria-label="Download Ticker for free">
             <Button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white border-0 h-12 px-8 text-base gap-2 rounded-xl min-w-[200px]">
               <Download className="size-5" />
               Download Free
             </Button>
           </a>
-          <a href={SITE.lemonsqueezy} target="_blank" rel="noopener noreferrer">
+          <a href={SITE.lemonsqueezy} target="_blank" rel="noopener noreferrer" aria-label={`Get Ticker Pro for ${PRICING.pro.price}`}>
             <Button
               variant="outline"
               className="border-white/20 text-white hover:bg-white/10 h-12 px-8 text-base gap-2 rounded-xl min-w-[200px]"

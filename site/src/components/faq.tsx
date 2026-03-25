@@ -21,7 +21,7 @@ export function Faq() {
         <Accordion className="space-y-2">
           {FAQ.map((item, index) => (
             <AccordionItem
-              key={index}
+              key={item.q}
               value={index}
               className="rounded-lg border border-white/10 bg-white/[0.03] px-4"
             >

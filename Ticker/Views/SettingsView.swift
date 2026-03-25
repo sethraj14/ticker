@@ -84,6 +84,7 @@ struct SettingsView: View {
                                             .clipShape(Circle())
                                     }
                                     .buttonStyle(.plain)
+                                    .accessibilityLabel("Remove account \(account.email)")
                                 }
                                 .padding(12)
                                 .background(RoundedRectangle(cornerRadius: 10).fill(.white.opacity(0.06)))

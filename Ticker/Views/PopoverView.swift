@@ -132,7 +132,7 @@ struct PopoverView: View {
                         Text("Upgrade to Pro")
                             .font(.system(size: 11, weight: .medium))
                         Spacer()
-                        Text("$7.99")
+                        Text(LicenseManager.priceDisplay)
                             .font(.system(size: 11))
                             .foregroundStyle(.white.opacity(0.3))
                     }

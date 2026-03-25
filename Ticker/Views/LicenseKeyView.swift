@@ -113,7 +113,7 @@ struct LicenseKeyView: View {
                     NSWorkspace.shared.open(url)
                 }
             } label: {
-                Text("Buy License — $7.99")
+                Text("Buy License — \(LicenseManager.priceDisplay)")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.white.opacity(0.5))
             }
