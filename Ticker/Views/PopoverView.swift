@@ -34,10 +34,13 @@ struct VisualEffectBackground: NSViewRepresentable {
 
 struct PopoverView: View {
     @ObservedObject var viewModel: CalendarViewModel
+    @State private var hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
 
     var body: some View {
         Group {
-            if viewModel.showSettings {
+            if !hasCompletedOnboarding {
+                OnboardingView(viewModel: viewModel, hasCompletedOnboarding: $hasCompletedOnboarding)
+            } else if viewModel.showSettings {
                 SettingsView(viewModel: viewModel)
             } else if viewModel.isAuthenticated {
                 authenticatedView
