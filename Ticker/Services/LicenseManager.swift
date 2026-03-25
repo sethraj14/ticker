@@ -70,16 +70,15 @@ final class LicenseManager: ObservableObject {
     private let activateURL = URL(string: "https://api.lemonsqueezy.com/v1/licenses/activate")!
     private let deactivateURL = URL(string: "https://api.lemonsqueezy.com/v1/licenses/deactivate")!
 
-    private var instanceId: String? {
-        loadStoredLicense()?.instanceId
-    }
+    private var storedInstanceId: String?
 
     // MARK: Init
 
     private init() {
-        loadStoredLicense().map { license in
+        if let license = loadStoredLicense() {
             isPro = true
-            licenseEmail = license.email
+            licenseEmail = license.email.isEmpty ? nil : license.email
+            storedInstanceId = license.instanceId
         }
     }
 
@@ -97,8 +96,9 @@ final class LicenseManager: ObservableObject {
         }
 
         let hostname = ProcessInfo.processInfo.hostName
-        let body = "license_key=\(trimmedKey)&instance_name=\(hostname)"
-            .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        let encodedKey = trimmedKey.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? trimmedKey
+        let encodedHost = hostname.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? hostname
+        let body = "license_key=\(encodedKey)&instance_name=\(encodedHost)"
 
         var request = URLRequest(url: activateURL)
         request.httpMethod = "POST"
@@ -108,13 +108,12 @@ final class LicenseManager: ObservableObject {
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
 
-            if let http = response as? HTTPURLResponse, http.statusCode == 400 {
-                // Parse error body for user-friendly message
+            if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
                 if let parsed = try? JSONDecoder().decode(LSActivateResponse.self, from: data),
                    let msg = parsed.error {
                     validationError = msg
                 } else {
-                    validationError = "Invalid license key."
+                    validationError = http.statusCode == 404 ? "Invalid license key." : "Server error (\(http.statusCode)). Try again later."
                 }
                 return
             }
@@ -126,8 +125,11 @@ final class LicenseManager: ObservableObject {
                 return
             }
 
+            guard let id = decoded.instance?.id else {
+                validationError = "Activation failed — no instance ID returned. Contact support."
+                return
+            }
             let email = decoded.meta?.customerEmail ?? ""
-            let id = decoded.instance?.id ?? UUID().uuidString
             let product = decoded.meta?.productName ?? "Ticker Pro"
 
             let license = StoredLicense(
@@ -146,6 +148,7 @@ final class LicenseManager: ObservableObject {
 
             isPro = true
             licenseEmail = email.isEmpty ? nil : email
+            storedInstanceId = id
 
         } catch {
             validationError = "Network error: \(error.localizedDescription)"
@@ -161,8 +164,9 @@ final class LicenseManager: ObservableObject {
         }
 
         // Best-effort remote deactivation — clear locally regardless of outcome
-        let body = "license_key=\(license.key)&instance_id=\(license.instanceId)"
-            .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        let encodedKey = license.key.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? license.key
+        let encodedId = license.instanceId.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? license.instanceId
+        let body = "license_key=\(encodedKey)&instance_id=\(encodedId)"
 
         var request = URLRequest(url: deactivateURL)
         request.httpMethod = "POST"
@@ -188,5 +192,6 @@ final class LicenseManager: ObservableObject {
         KeychainHelper.delete(key: storageKey)
         isPro = false
         licenseEmail = nil
+        storedInstanceId = nil
     }
 }
