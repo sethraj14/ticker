@@ -2,6 +2,7 @@ import { Download, ExternalLink, Apple, Code, Gift } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { SITE, PRICING } from "@/lib/constants"
+import { EmailCapture } from "@/components/email-capture"
 
 interface HeroProps {
   isProductHunt?: boolean
@@ -76,6 +77,14 @@ export function Hero({ isProductHunt = false }: HeroProps) {
             <Gift className="size-3" />
             Free Forever
           </Badge>
+        </div>
+
+        {/* Email capture */}
+        <div className="mt-10">
+          <p className="text-xs text-zinc-600 mb-3">
+            Get notified when we launch on Product Hunt
+          </p>
+          <EmailCapture />
         </div>
 
         {/* Screenshot placeholder */}

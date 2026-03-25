@@ -1,8 +1,24 @@
 import { Star, Quote } from "lucide-react"
 import { SITE } from "@/lib/constants"
 import { GitHubIcon } from "@/components/icons"
+import { EmailCapture } from "@/components/email-capture"
 
-export function SocialProof() {
+async function getStarCount(): Promise<number | null> {
+  try {
+    const res = await fetch("https://api.github.com/repos/sethraj14/ticker", {
+      next: { revalidate: 3600 },
+    })
+    if (!res.ok) return null
+    const data = (await res.json()) as { stargazers_count?: number }
+    return data.stargazers_count ?? null
+  } catch {
+    return null
+  }
+}
+
+export async function SocialProof() {
+  const stars = await getStarCount()
+
   return (
     <section className="py-24 md:py-32">
       <div className="mx-auto max-w-6xl px-6">
@@ -24,7 +40,7 @@ export function SocialProof() {
             <span className="text-sm text-zinc-300">Star on GitHub</span>
             <span className="flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-0.5 text-xs text-zinc-300">
               <Star className="size-3 fill-yellow-400 text-yellow-400" />
-              <span>--</span>
+              <span>{stars !== null ? stars.toLocaleString() : "—"}</span>
             </span>
           </a>
         </div>
@@ -40,6 +56,14 @@ export function SocialProof() {
               <p className="text-sm text-zinc-600">Testimonial coming soon</p>
             </div>
           ))}
+        </div>
+
+        {/* Email capture — Product Hunt launch notification */}
+        <div className="mt-16 text-center">
+          <p className="text-sm text-zinc-500 mb-4">
+            Get notified when we launch on Product Hunt
+          </p>
+          <EmailCapture />
         </div>
       </div>
     </section>

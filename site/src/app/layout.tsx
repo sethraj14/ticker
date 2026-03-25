@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/og.png",
+        url: "/api/og",
         width: 1200,
         height: 630,
         alt: `${SITE.name} — Menu bar calendar for macOS`,
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     title: `${SITE.name} — ${SITE.tagline}`,
     description: SITE.description,
     creator: "@rajdeepseth",
-    images: ["/og.png"],
+    images: ["/api/og"],
   },
   icons: {
     icon: "/favicon.ico",
