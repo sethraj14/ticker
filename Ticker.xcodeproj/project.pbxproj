@@ -7,23 +7,31 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		00E1DFF37856F0023AA3376A /* NotificationPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BF1C63409EA12855B8FF362 /* NotificationPanel.swift */; };
 		01CD142D129EC9410B8E25A6 /* JoinSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A868BC2218CB1B4E41B32E9 /* JoinSection.swift */; };
 		03CCB36B8CBF2652E1BE3E3A /* CalendarEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FFA02FF4CB8587DAD1E3BFD /* CalendarEvent.swift */; };
 		04650AB10A7AEF38A43F789F /* GoogleAccount.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E0B83F8FA6D81B67311C876 /* GoogleAccount.swift */; };
 		0B985C278BFF9D8BCBB6B9AC /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0E611805278CBE58357A2A7 /* KeychainHelper.swift */; };
 		1DB9231BF9874C658696AE3B /* GoogleCalendarService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5CA2D3D58CF0E9D77413E70 /* GoogleCalendarService.swift */; };
+		2A2792C39C515F48C934F4CC /* AllDayBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = D08BCD78D46D51A0D23AB20D /* AllDayBanner.swift */; };
+		2BCBB4B5ED070CBBF72645FB /* AccountsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B6B842FB09D58856957D2B1 /* AccountsSection.swift */; };
+		3E2448CDEEDACA8C66E108FB /* ProBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684A2D9D2CEDF349E5BC7818 /* ProBadge.swift */; };
 		3E5A629EF2F0CB4068451D15 /* DayNavigationBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC31741E9FE8E41D7C0E3E1E /* DayNavigationBar.swift */; };
 		456228785B55B3E7D41895FA /* LoopbackHTTPServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBE8044C96EE5B4F6EA0053E /* LoopbackHTTPServer.swift */; };
+		520ADB1085E5E4572D92442D /* LicenseKeyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A43509F8A2FF68CF240F287F /* LicenseKeyView.swift */; };
 		5A349B391EA6CAF1DA6559C9 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E603713A5DA8B577AE65AE6 /* NotificationService.swift */; };
 		5C22D8386C6763AF71ED4C62 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FA4A82A446E12D061F7E94D /* SettingsView.swift */; };
+		65B38BF15948B70812B7D781 /* LicenseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E040224F8CF6F9B29CA15CA3 /* LicenseManager.swift */; };
+		7E281676D082F6EE4E0EDB12 /* EmptyStateViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A03C86A25EEADE717A231A2 /* EmptyStateViews.swift */; };
+		83B805E849B86331CE6FF454 /* UpgradePrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B42865DA27C79A07D25082A /* UpgradePrompt.swift */; };
 		85F87D589E0A2728F73DE5D6 /* TickerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBFE41958B54F61E2D955534 /* TickerApp.swift */; };
 		AE254C786F74A4BD92CB1C63 /* CalendarViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B661760D718C374170E35086 /* CalendarViewModel.swift */; };
 		CEC19EA62B714E62317A0B54 /* Config.xcconfig.example in Resources */ = {isa = PBXBuildFile; fileRef = FEDF929813B9CE4691C62D63 /* Config.xcconfig.example */; };
 		D4BED4D407BF4866617AC131 /* EventKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 549D81CB59B5AAF8E8CE737D /* EventKitService.swift */; };
 		D62E6292B41884234A4EA145 /* PopoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 832ECE50357A244FF39E4E0B /* PopoverView.swift */; };
+		DCAB07F3B4280618A43B087E /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3F015209DC24736A729ECE7 /* OnboardingView.swift */; };
 		F1C57D068B92EA63AC656524 /* DayTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4ECC75D240239A5A1439736 /* DayTimelineView.swift */; };
 		FB41921DC911831AE0AFCC16 /* MeetingBlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A02BAE2A37E08DC21F01263 /* MeetingBlockView.swift */; };
-		A1B2C3D4E5F60718192A3B4C /* NotificationPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7E8F9A0B1C2D3E4F5061728 /* NotificationPanel.swift */; };
 		FBE98AC442B9AC51D8357F1A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 673BBEBD03F5A6673840E4C1 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -33,21 +41,29 @@
 		1E0B83F8FA6D81B67311C876 /* GoogleAccount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleAccount.swift; sourceTree = "<group>"; };
 		530EFF981DA0BEAE4EE4E49C /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 		549D81CB59B5AAF8E8CE737D /* EventKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventKitService.swift; sourceTree = "<group>"; };
+		5BF1C63409EA12855B8FF362 /* NotificationPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationPanel.swift; sourceTree = "<group>"; };
 		673BBEBD03F5A6673840E4C1 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		684A2D9D2CEDF349E5BC7818 /* ProBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProBadge.swift; sourceTree = "<group>"; };
+		6B42865DA27C79A07D25082A /* UpgradePrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpgradePrompt.swift; sourceTree = "<group>"; };
 		6C92E57803ED04C367DF94CB /* Ticker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Ticker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6E603713A5DA8B577AE65AE6 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
-		D7E8F9A0B1C2D3E4F5061728 /* NotificationPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationPanel.swift; sourceTree = "<group>"; };
 		6FA4A82A446E12D061F7E94D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		832ECE50357A244FF39E4E0B /* PopoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopoverView.swift; sourceTree = "<group>"; };
+		8A03C86A25EEADE717A231A2 /* EmptyStateViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateViews.swift; sourceTree = "<group>"; };
 		8A868BC2218CB1B4E41B32E9 /* JoinSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JoinSection.swift; sourceTree = "<group>"; };
+		8B6B842FB09D58856957D2B1 /* AccountsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountsSection.swift; sourceTree = "<group>"; };
 		8FFA02FF4CB8587DAD1E3BFD /* CalendarEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarEvent.swift; sourceTree = "<group>"; };
 		95326BC666015BAC7C7508B2 /* Ticker.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Ticker.entitlements; sourceTree = "<group>"; };
+		A43509F8A2FF68CF240F287F /* LicenseKeyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicenseKeyView.swift; sourceTree = "<group>"; };
 		AC31741E9FE8E41D7C0E3E1E /* DayNavigationBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayNavigationBar.swift; sourceTree = "<group>"; };
 		B0E611805278CBE58357A2A7 /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelper.swift; sourceTree = "<group>"; };
 		B661760D718C374170E35086 /* CalendarViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarViewModel.swift; sourceTree = "<group>"; };
 		BBE8044C96EE5B4F6EA0053E /* LoopbackHTTPServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopbackHTTPServer.swift; sourceTree = "<group>"; };
+		D08BCD78D46D51A0D23AB20D /* AllDayBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllDayBanner.swift; sourceTree = "<group>"; };
+		D3F015209DC24736A729ECE7 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		D5CA2D3D58CF0E9D77413E70 /* GoogleCalendarService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleCalendarService.swift; sourceTree = "<group>"; };
 		DBFE41958B54F61E2D955534 /* TickerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TickerApp.swift; sourceTree = "<group>"; };
+		E040224F8CF6F9B29CA15CA3 /* LicenseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicenseManager.swift; sourceTree = "<group>"; };
 		F4ECC75D240239A5A1439736 /* DayTimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayTimelineView.swift; sourceTree = "<group>"; };
 		FEDF929813B9CE4691C62D63 /* Config.xcconfig.example */ = {isa = PBXFileReference; path = Config.xcconfig.example; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -66,6 +82,7 @@
 			children = (
 				549D81CB59B5AAF8E8CE737D /* EventKitService.swift */,
 				D5CA2D3D58CF0E9D77413E70 /* GoogleCalendarService.swift */,
+				E040224F8CF6F9B29CA15CA3 /* LicenseManager.swift */,
 				BBE8044C96EE5B4F6EA0053E /* LoopbackHTTPServer.swift */,
 				6E603713A5DA8B577AE65AE6 /* NotificationService.swift */,
 			);
@@ -108,13 +125,20 @@
 		E99D2A19807F7923B75C5550 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				8B6B842FB09D58856957D2B1 /* AccountsSection.swift */,
+				D08BCD78D46D51A0D23AB20D /* AllDayBanner.swift */,
 				AC31741E9FE8E41D7C0E3E1E /* DayNavigationBar.swift */,
 				F4ECC75D240239A5A1439736 /* DayTimelineView.swift */,
+				8A03C86A25EEADE717A231A2 /* EmptyStateViews.swift */,
 				8A868BC2218CB1B4E41B32E9 /* JoinSection.swift */,
+				A43509F8A2FF68CF240F287F /* LicenseKeyView.swift */,
 				0A02BAE2A37E08DC21F01263 /* MeetingBlockView.swift */,
-				D7E8F9A0B1C2D3E4F5061728 /* NotificationPanel.swift */,
+				5BF1C63409EA12855B8FF362 /* NotificationPanel.swift */,
+				D3F015209DC24736A729ECE7 /* OnboardingView.swift */,
 				832ECE50357A244FF39E4E0B /* PopoverView.swift */,
+				684A2D9D2CEDF349E5BC7818 /* ProBadge.swift */,
 				6FA4A82A446E12D061F7E94D /* SettingsView.swift */,
+				6B42865DA27C79A07D25082A /* UpgradePrompt.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -205,22 +229,30 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2BCBB4B5ED070CBBF72645FB /* AccountsSection.swift in Sources */,
+				2A2792C39C515F48C934F4CC /* AllDayBanner.swift in Sources */,
 				03CCB36B8CBF2652E1BE3E3A /* CalendarEvent.swift in Sources */,
 				AE254C786F74A4BD92CB1C63 /* CalendarViewModel.swift in Sources */,
 				3E5A629EF2F0CB4068451D15 /* DayNavigationBar.swift in Sources */,
 				F1C57D068B92EA63AC656524 /* DayTimelineView.swift in Sources */,
+				7E281676D082F6EE4E0EDB12 /* EmptyStateViews.swift in Sources */,
 				D4BED4D407BF4866617AC131 /* EventKitService.swift in Sources */,
 				04650AB10A7AEF38A43F789F /* GoogleAccount.swift in Sources */,
 				1DB9231BF9874C658696AE3B /* GoogleCalendarService.swift in Sources */,
 				01CD142D129EC9410B8E25A6 /* JoinSection.swift in Sources */,
 				0B985C278BFF9D8BCBB6B9AC /* KeychainHelper.swift in Sources */,
+				520ADB1085E5E4572D92442D /* LicenseKeyView.swift in Sources */,
+				65B38BF15948B70812B7D781 /* LicenseManager.swift in Sources */,
 				456228785B55B3E7D41895FA /* LoopbackHTTPServer.swift in Sources */,
 				FB41921DC911831AE0AFCC16 /* MeetingBlockView.swift in Sources */,
+				00E1DFF37856F0023AA3376A /* NotificationPanel.swift in Sources */,
 				5A349B391EA6CAF1DA6559C9 /* NotificationService.swift in Sources */,
-				A1B2C3D4E5F60718192A3B4C /* NotificationPanel.swift in Sources */,
+				DCAB07F3B4280618A43B087E /* OnboardingView.swift in Sources */,
 				D62E6292B41884234A4EA145 /* PopoverView.swift in Sources */,
+				3E2448CDEEDACA8C66E108FB /* ProBadge.swift in Sources */,
 				5C22D8386C6763AF71ED4C62 /* SettingsView.swift in Sources */,
 				85F87D589E0A2728F73DE5D6 /* TickerApp.swift in Sources */,
+				83B805E849B86331CE6FF454 /* UpgradePrompt.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
