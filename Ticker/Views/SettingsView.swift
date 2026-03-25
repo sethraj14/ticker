@@ -89,142 +89,202 @@ struct SettingsView: View {
                                 .background(RoundedRectangle(cornerRadius: 10).fill(.white.opacity(0.06)))
                             }
 
-                            Button {
-                                viewModel.addAccount()
-                            } label: {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "plus.circle.fill")
-                                        .font(.system(size: 14))
-                                    Text("Add Google Account")
-                                        .font(.system(size: 12, weight: .medium))
+                            if LicenseManager.shared.isPro || viewModel.googleService.accounts.isEmpty {
+                                Button {
+                                    viewModel.addAccount()
+                                } label: {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "plus.circle.fill")
+                                            .font(.system(size: 14))
+                                        Text("Add Google Account")
+                                            .font(.system(size: 12, weight: .medium))
+                                    }
+                                    .foregroundStyle(.white.opacity(0.5))
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 10)
+                                    .background(RoundedRectangle(cornerRadius: 10).strokeBorder(.white.opacity(0.12), lineWidth: 1))
                                 }
-                                .foregroundStyle(.white.opacity(0.5))
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 10)
-                                .background(RoundedRectangle(cornerRadius: 10).strokeBorder(.white.opacity(0.12), lineWidth: 1))
+                                .buttonStyle(.plain)
+                            } else {
+                                Button {
+                                    if let url = URL(string: UpgradePrompt.defaultCheckoutURL) {
+                                        NSWorkspace.shared.open(url)
+                                    }
+                                } label: {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "plus.circle.fill")
+                                            .font(.system(size: 14))
+                                        Text("Add Google Account")
+                                            .font(.system(size: 12, weight: .medium))
+                                        ProBadge()
+                                    }
+                                    .foregroundStyle(.white.opacity(0.3))
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 10)
+                                    .background(RoundedRectangle(cornerRadius: 10).strokeBorder(.white.opacity(0.08), lineWidth: 1))
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
 
                             // Apple Calendar
-                            HStack(spacing: 10) {
-                                Image(systemName: "apple.logo")
-                                    .font(.system(size: 18))
-                                    .foregroundStyle(.white.opacity(0.6))
-                                    .frame(width: 22)
+                            if LicenseManager.shared.isPro {
+                                HStack(spacing: 10) {
+                                    Image(systemName: "apple.logo")
+                                        .font(.system(size: 18))
+                                        .foregroundStyle(.white.opacity(0.6))
+                                        .frame(width: 22)
 
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Apple Calendar")
-                                        .font(.system(size: 13, weight: .medium))
-                                        .foregroundStyle(.white.opacity(0.8))
-                                    Text(viewModel.eventKitService.isAuthorized ? "Enabled" : "Not connected")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(viewModel.eventKitService.isAuthorized ? .green.opacity(0.7) : .white.opacity(0.3))
-                                }
-
-                                Spacer()
-
-                                if viewModel.eventKitService.isAuthorized {
-                                    Toggle("", isOn: Binding(
-                                        get: { viewModel.eventKitService.isEnabled },
-                                        set: { newValue in
-                                            viewModel.eventKitService.isEnabled = newValue
-                                            viewModel.fetchEvents()
-                                        }
-                                    ))
-                                    .toggleStyle(.switch)
-                                    .controlSize(.small)
-                                } else {
-                                    Button("Enable") {
-                                        viewModel.eventKitService.requestAccess()
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("Apple Calendar")
+                                            .font(.system(size: 13, weight: .medium))
+                                            .foregroundStyle(.white.opacity(0.8))
+                                        Text(viewModel.eventKitService.isAuthorized ? "Enabled" : "Not connected")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(viewModel.eventKitService.isAuthorized ? .green.opacity(0.7) : .white.opacity(0.3))
                                     }
-                                    .font(.system(size: 12, weight: .medium))
-                                    .foregroundStyle(.blue)
-                                    .buttonStyle(.plain)
+
+                                    Spacer()
+
+                                    if viewModel.eventKitService.isAuthorized {
+                                        Toggle("", isOn: Binding(
+                                            get: { viewModel.eventKitService.isEnabled },
+                                            set: { newValue in
+                                                viewModel.eventKitService.isEnabled = newValue
+                                                viewModel.fetchEvents()
+                                            }
+                                        ))
+                                        .toggleStyle(.switch)
+                                        .controlSize(.small)
+                                    } else {
+                                        Button("Enable") {
+                                            viewModel.eventKitService.requestAccess()
+                                        }
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundStyle(.blue)
+                                        .buttonStyle(.plain)
+                                    }
                                 }
+                                .padding(12)
+                                .background(RoundedRectangle(cornerRadius: 10).fill(.white.opacity(0.06)))
+                            } else {
+                                Button {
+                                    if let url = URL(string: UpgradePrompt.defaultCheckoutURL) {
+                                        NSWorkspace.shared.open(url)
+                                    }
+                                } label: {
+                                    HStack(spacing: 10) {
+                                        Image(systemName: "apple.logo")
+                                            .font(.system(size: 18))
+                                            .foregroundStyle(.white.opacity(0.3))
+                                            .frame(width: 22)
+
+                                        Text("Apple Calendar")
+                                            .font(.system(size: 13, weight: .medium))
+                                            .foregroundStyle(.white.opacity(0.4))
+
+                                        ProBadge()
+
+                                        Spacer()
+                                    }
+                                    .padding(12)
+                                    .background(RoundedRectangle(cornerRadius: 10).fill(.white.opacity(0.04)))
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .padding(12)
-                            .background(RoundedRectangle(cornerRadius: 10).fill(.white.opacity(0.06)))
                         }
                     }
 
                     // Notifications Section
-                    settingsSection("Notifications") {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Remind me before meetings:")
-                                .font(.system(size: 12))
-                                .foregroundStyle(.white.opacity(0.4))
-
-                            ForEach(viewModel.notificationService.leadTimes, id: \.self) { minutes in
-                                HStack {
-                                    Image(systemName: "bell.fill")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.orange.opacity(0.7))
-                                    Text("\(minutes) \(minutes == 1 ? "minute" : "minutes") before")
-                                        .font(.system(size: 13))
-                                        .foregroundStyle(.white.opacity(0.7))
-                                    Spacer()
-                                    Button {
-                                        var times = viewModel.notificationService.leadTimes
-                                        times.removeAll { $0 == minutes }
-                                        viewModel.notificationService.leadTimes = times
-                                        viewModel.rescheduleNotifications()
-                                    } label: {
-                                        Image(systemName: "minus.circle.fill")
-                                            .foregroundStyle(.red.opacity(0.6))
-                                            .font(.system(size: 16))
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                                .padding(.vertical, 6)
-                                .padding(.horizontal, 12)
-                                .background(RoundedRectangle(cornerRadius: 8).fill(.white.opacity(0.06)))
-                            }
-
-                            HStack(spacing: 8) {
-                                TextField("Minutes", text: $newLeadTime)
-                                    .textFieldStyle(.roundedBorder)
-                                    .frame(width: 80)
+                    if LicenseManager.shared.isPro {
+                        settingsSection("Notifications") {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Remind me before meetings:")
                                     .font(.system(size: 12))
+                                    .foregroundStyle(.white.opacity(0.4))
 
-                                Button("Add Reminder") {
-                                    if let minutes = Int(newLeadTime), minutes > 0, minutes <= 120 {
-                                        var times = viewModel.notificationService.leadTimes
-                                        if !times.contains(minutes) {
-                                            times.append(minutes)
-                                            times.sort(by: >)
+                                ForEach(viewModel.notificationService.leadTimes, id: \.self) { minutes in
+                                    HStack {
+                                        Image(systemName: "bell.fill")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.orange.opacity(0.7))
+                                        Text("\(minutes) \(minutes == 1 ? "minute" : "minutes") before")
+                                            .font(.system(size: 13))
+                                            .foregroundStyle(.white.opacity(0.7))
+                                        Spacer()
+                                        Button {
+                                            var times = viewModel.notificationService.leadTimes
+                                            times.removeAll { $0 == minutes }
                                             viewModel.notificationService.leadTimes = times
                                             viewModel.rescheduleNotifications()
+                                        } label: {
+                                            Image(systemName: "minus.circle.fill")
+                                                .foregroundStyle(.red.opacity(0.6))
+                                                .font(.system(size: 16))
                                         }
-                                        newLeadTime = ""
+                                        .buttonStyle(.plain)
                                     }
+                                    .padding(.vertical, 6)
+                                    .padding(.horizontal, 12)
+                                    .background(RoundedRectangle(cornerRadius: 8).fill(.white.opacity(0.06)))
                                 }
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle(.blue)
-                                .buttonStyle(.plain)
-                                .disabled(Int(newLeadTime) == nil)
-                            }
-                            .padding(.top, 4)
-                        }
-                    }
 
-                    // Preview Section
-                    settingsSection("Preview") {
-                        Button {
-                            NotificationWindowController.shared.showTest()
-                        } label: {
-                            HStack(spacing: 8) {
-                                Image(systemName: "bell.badge")
-                                    .font(.system(size: 13))
-                                Text("Test Notification")
+                                HStack(spacing: 8) {
+                                    TextField("Minutes", text: $newLeadTime)
+                                        .textFieldStyle(.roundedBorder)
+                                        .frame(width: 80)
+                                        .font(.system(size: 12))
+
+                                    Button("Add Reminder") {
+                                        if let minutes = Int(newLeadTime), minutes > 0, minutes <= 120 {
+                                            var times = viewModel.notificationService.leadTimes
+                                            if !times.contains(minutes) {
+                                                times.append(minutes)
+                                                times.sort(by: >)
+                                                viewModel.notificationService.leadTimes = times
+                                                viewModel.rescheduleNotifications()
+                                            }
+                                            newLeadTime = ""
+                                        }
+                                    }
                                     .font(.system(size: 12, weight: .medium))
+                                    .foregroundStyle(.blue)
+                                    .buttonStyle(.plain)
+                                    .disabled(Int(newLeadTime) == nil)
+                                }
+                                .padding(.top, 4)
                             }
-                            .foregroundStyle(.white.opacity(0.6))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 10)
-                            .background(RoundedRectangle(cornerRadius: 10).fill(.white.opacity(0.06)))
-                            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(.white.opacity(0.1), lineWidth: 1))
                         }
-                        .buttonStyle(.plain)
+
+                        // Preview Section
+                        settingsSection("Preview") {
+                            Button {
+                                NotificationWindowController.shared.showTest()
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "bell.badge")
+                                        .font(.system(size: 13))
+                                    Text("Test Notification")
+                                        .font(.system(size: 12, weight: .medium))
+                                }
+                                .foregroundStyle(.white.opacity(0.6))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 10)
+                                .background(RoundedRectangle(cornerRadius: 10).fill(.white.opacity(0.06)))
+                                .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(.white.opacity(0.1), lineWidth: 1))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    } else {
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack(spacing: 6) {
+                                Text("NOTIFICATIONS")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundStyle(.white.opacity(0.3))
+                                    .tracking(1)
+                                ProBadge()
+                            }
+                            UpgradePrompt(feature: "Get notified before meetings start")
+                        }
                     }
 
                     // General Section
@@ -258,6 +318,11 @@ struct SettingsView: View {
                             .background(RoundedRectangle(cornerRadius: 10).fill(.white.opacity(0.06)))
                         }
                     }
+
+                    Divider()
+                        .background(.white.opacity(0.08))
+
+                    LicenseKeyView()
 
                     // Footer
                     HStack {

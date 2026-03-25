@@ -71,7 +71,8 @@ struct PopoverView: View {
                 dateLabel: viewModel.selectedDateLabel,
                 onPrevious: { viewModel.navigateDay(by: -1) },
                 onNext: { viewModel.navigateDay(by: 1) },
-                onToday: { viewModel.goToToday() }
+                onToday: { viewModel.goToToday() },
+                isPro: LicenseManager.shared.isPro
             )
 
             // Subtle divider

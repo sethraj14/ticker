@@ -5,18 +5,25 @@ struct DayNavigationBar: View {
     let onPrevious: () -> Void
     let onNext: () -> Void
     let onToday: () -> Void
+    var isPro: Bool = true
 
     var body: some View {
         HStack(spacing: 0) {
             Button(action: onPrevious) {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.5))
+                    .foregroundStyle(.white.opacity(isPro ? 0.5 : 0.2))
                     .frame(width: 30, height: 30)
                     .background(.white.opacity(0.06))
                     .clipShape(Circle())
             }
             .buttonStyle(.plain)
+            .disabled(!isPro)
+
+            if !isPro {
+                ProBadge()
+                    .padding(.leading, 4)
+            }
 
             Spacer()
 
@@ -29,15 +36,21 @@ struct DayNavigationBar: View {
 
             Spacer()
 
+            if !isPro {
+                ProBadge()
+                    .padding(.trailing, 4)
+            }
+
             Button(action: onNext) {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.5))
+                    .foregroundStyle(.white.opacity(isPro ? 0.5 : 0.2))
                     .frame(width: 30, height: 30)
                     .background(.white.opacity(0.06))
                     .clipShape(Circle())
             }
             .buttonStyle(.plain)
+            .disabled(!isPro)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
