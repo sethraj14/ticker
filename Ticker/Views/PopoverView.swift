@@ -116,6 +116,35 @@ struct PopoverView: View {
                 .fill(.white.opacity(0.08))
                 .frame(height: 1)
 
+            // Upgrade footer (free users only)
+            if !LicenseManager.shared.isPro {
+                Button {
+                    if let url = URL(string: LicenseManager.checkoutURL) {
+                        NSWorkspace.shared.open(url)
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 10))
+                        Text("Upgrade to Pro")
+                            .font(.system(size: 11, weight: .medium))
+                        Spacer()
+                        Text("$7.99")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.white.opacity(0.3))
+                    }
+                    .foregroundStyle(.white.opacity(0.5))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Upgrade to Ticker Pro for seven ninety-nine")
+
+                Rectangle()
+                    .fill(.white.opacity(0.08))
+                    .frame(height: 1)
+            }
+
             bottomBar
         }
     }
