@@ -158,6 +158,25 @@ final class LicenseManager: ObservableObject {
         }
     }
 
+    // MARK: Manual Activation (for testing / gifting Pro)
+
+    /// Activate Pro locally without Lemon Squeezy validation.
+    /// Use for testing or gifting Pro to someone before LS is set up.
+    func activateManually(email: String = "manual@ticker.app") {
+        let license = StoredLicense(
+            key: "MANUAL-\(UUID().uuidString)",
+            email: email,
+            instanceId: "manual-\(ProcessInfo.processInfo.hostName)",
+            activatedAt: Date(),
+            productName: "Ticker Pro (Manual)"
+        )
+        guard let encoded = try? JSONEncoder().encode(license),
+              KeychainHelper.save(key: storageKey, data: encoded) else { return }
+        isPro = true
+        licenseEmail = email
+        storedInstanceId = license.instanceId
+    }
+
     // MARK: Deactivate
 
     func deactivate() async {

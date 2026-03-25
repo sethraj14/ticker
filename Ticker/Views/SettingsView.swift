@@ -193,6 +193,10 @@ struct SettingsView: View {
                         Text("Ticker v0.1.0")
                             .font(.system(size: 11))
                             .foregroundStyle(.white.opacity(0.15))
+                            .onTapGesture(count: 5) {
+                                // Hidden: 5-tap to manually activate Pro (for testing/gifting)
+                                LicenseManager.shared.activateManually()
+                            }
                         Spacer()
                     }
                     .padding(.top, 4)
