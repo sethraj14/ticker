@@ -3,6 +3,7 @@ import SwiftUI
 @main
 struct TickerApp: App {
     @StateObject private var viewModel = CalendarViewModel()
+    @StateObject private var licenseManager = LicenseManager.shared
 
     var body: some Scene {
         MenuBarExtra {
