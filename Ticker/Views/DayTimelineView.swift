@@ -198,7 +198,7 @@ struct DayTimelineView: View {
         let cal = Calendar.current
         let h = cal.component(.hour, from: date)
         let m = cal.component(.minute, from: date)
-        return ((CGFloat(h) + CGFloat(m) / 60.0) * hourHeight).rounded(.toNearestOrEven)
+        return ((CGFloat(h) + CGFloat(m) / 60.0) * hourHeight).rounded(.down)
     }
 
     private func hourLabel(_ hour: Int) -> String {
