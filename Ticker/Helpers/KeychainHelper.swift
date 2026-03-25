@@ -4,7 +4,10 @@ import Foundation
 /// Avoids all macOS Keychain password popup issues with unsigned debug builds.
 enum KeychainHelper {
     private static let storageDir: URL = {
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        guard let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            // Fallback to temp directory if Application Support is unavailable
+            return FileManager.default.temporaryDirectory.appendingPathComponent("Ticker", isDirectory: true)
+        }
         let dir = appSupport.appendingPathComponent("Ticker", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
