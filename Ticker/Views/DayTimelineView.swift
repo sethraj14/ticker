@@ -121,7 +121,7 @@ struct DayTimelineView: View {
         ForEach(computeColumns(events: events), id: \.event.id) { le in
             let topY = timeToY(le.event.startDate)
             let bottomY = timeToY(le.event.endDate)
-            let height = max(bottomY - topY, 10)
+            let height = max(bottomY - topY, 20)
             let colWidth = eventAreaWidth / CGFloat(le.totalColumns)
             let leftX = lineStart + colWidth * CGFloat(le.column)
             let isSelected = selectedEventID == le.event.id
@@ -198,7 +198,7 @@ struct DayTimelineView: View {
         let cal = Calendar.current
         let h = cal.component(.hour, from: date)
         let m = cal.component(.minute, from: date)
-        return (CGFloat(h) + CGFloat(m) / 60.0) * hourHeight
+        return ((CGFloat(h) + CGFloat(m) / 60.0) * hourHeight).rounded(.toNearestOrEven)
     }
 
     private func hourLabel(_ hour: Int) -> String {
