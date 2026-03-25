@@ -64,7 +64,9 @@ final class LicenseManager: ObservableObject {
     @Published var isValidating: Bool = false
     @Published var validationError: String?
 
-    // MARK: Private constants
+    // MARK: Constants
+
+    static let checkoutURL = "https://ticker.lemonsqueezy.com/buy/ticker-pro"
 
     private let storageKey = "ticker_license"
     private let activateURL = URL(string: "https://api.lemonsqueezy.com/v1/licenses/activate")!

@@ -5,7 +5,7 @@ struct DayNavigationBar: View {
     let onPrevious: () -> Void
     let onNext: () -> Void
     let onToday: () -> Void
-    var isPro: Bool = true
+    var isPro: Bool = false
 
     var body: some View {
         HStack(spacing: 0) {

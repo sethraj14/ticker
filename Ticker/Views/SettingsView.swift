@@ -107,7 +107,7 @@ struct SettingsView: View {
                                 .buttonStyle(.plain)
                             } else {
                                 Button {
-                                    if let url = URL(string: UpgradePrompt.defaultCheckoutURL) {
+                                    if let url = URL(string: LicenseManager.checkoutURL) {
                                         NSWorkspace.shared.open(url)
                                     }
                                 } label: {
@@ -168,7 +168,7 @@ struct SettingsView: View {
                                 .background(RoundedRectangle(cornerRadius: 10).fill(.white.opacity(0.06)))
                             } else {
                                 Button {
-                                    if let url = URL(string: UpgradePrompt.defaultCheckoutURL) {
+                                    if let url = URL(string: LicenseManager.checkoutURL) {
                                         NSWorkspace.shared.open(url)
                                     }
                                 } label: {

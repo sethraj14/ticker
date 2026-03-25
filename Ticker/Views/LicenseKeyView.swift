@@ -109,7 +109,7 @@ struct LicenseKeyView: View {
             }
 
             Button {
-                if let url = URL(string: UpgradePrompt.defaultCheckoutURL) {
+                if let url = URL(string: LicenseManager.checkoutURL) {
                     NSWorkspace.shared.open(url)
                 }
             } label: {

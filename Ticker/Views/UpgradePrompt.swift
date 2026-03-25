@@ -2,7 +2,7 @@ import SwiftUI
 
 struct UpgradePrompt: View {
     let feature: String
-    static let defaultCheckoutURL = "https://ticker.lemonsqueezy.com/buy/ticker-pro"
+    private var checkoutURL: String { LicenseManager.checkoutURL }
 
     var body: some View {
         VStack(spacing: 8) {
@@ -20,7 +20,7 @@ struct UpgradePrompt: View {
                 .multilineTextAlignment(.center)
 
             Button {
-                if let url = URL(string: Self.defaultCheckoutURL) {
+                if let url = URL(string: checkoutURL) {
                     NSWorkspace.shared.open(url)
                 }
             } label: {
