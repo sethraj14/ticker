@@ -18,6 +18,9 @@ final class NotificationService: NSObject, ObservableObject, UNUserNotificationC
     override private init() {
         super.init()
         UNUserNotificationCenter.current().delegate = self
+        // Clear any previously scheduled native notifications — custom panel is the only system now
+        UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+        UNUserNotificationCenter.current().removeAllDeliveredNotifications()
         registerCategories()
         checkAuthorization()
         migrateDefaultLeadTimes()
@@ -89,7 +92,6 @@ final class NotificationService: NSObject, ObservableObject, UNUserNotificationC
     // MARK: - Schedule Notifications
 
     func scheduleNotifications(for events: [CalendarEvent]) {
-        let center = UNUserNotificationCenter.current()
         let now = Date.now
 
         // Store events for custom panel lookup
@@ -99,7 +101,6 @@ final class NotificationService: NSObject, ObservableObject, UNUserNotificationC
 
         // Build the set of notification IDs we want to exist
         var desiredIDs: Set<String> = []
-        var requests: [UNNotificationRequest] = []
 
         for event in events {
             guard event.startDate.timeIntervalSince(now) > -1 else { continue }
@@ -117,40 +118,7 @@ final class NotificationService: NSObject, ObservableObject, UNUserNotificationC
                 // Skip if already scheduled from a previous call
                 guard !scheduledEventIDs.contains(notificationID) else { continue }
 
-                // Schedule system notification (fallback for when app isn't focused)
-                let content = UNMutableNotificationContent()
-                content.title = event.title
-                content.sound = .default
-                content.categoryIdentifier = meetingCategory
-
-                if leadMinutes == 1 {
-                    content.body = "Starting in 60 seconds — get ready to join"
-                    content.interruptionLevel = .timeSensitive
-                } else if leadMinutes > 0 {
-                    content.body = "Starts in \(leadMinutes) minutes"
-                } else {
-                    content.body = "Starting now"
-                    content.interruptionLevel = .timeSensitive
-                }
-
-                if let url = event.meetingURL {
-                    content.userInfo["meetingURL"] = url.absoluteString
-                }
-                content.userInfo["eventID"] = event.id
-                content.userInfo["leadMinutes"] = leadMinutes
-
-                let trigger = UNTimeIntervalNotificationTrigger(
-                    timeInterval: interval,
-                    repeats: false
-                )
-
-                requests.append(UNNotificationRequest(
-                    identifier: notificationID,
-                    content: content,
-                    trigger: trigger
-                ))
-
-                // Schedule custom floating panel timer
+                // Schedule custom floating panel timer (only notification system)
                 let eventID = event.id
                 let lead = leadMinutes
                 let timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
@@ -161,51 +129,34 @@ final class NotificationService: NSObject, ObservableObject, UNUserNotificationC
             }
         }
 
-        // Remove stale notifications & timers
+        // Remove stale timers
         let staleIDs = scheduledEventIDs.subtracting(desiredIDs)
         if !staleIDs.isEmpty {
-            center.removePendingNotificationRequests(withIdentifiers: Array(staleIDs))
             for id in staleIDs {
                 panelTimers[id]?.invalidate()
                 panelTimers.removeValue(forKey: id)
             }
         }
 
-        // Add new system notifications
-        for request in requests {
-            center.add(request)
-        }
-
         scheduledEventIDs = desiredIDs
     }
 
-    // MARK: - UNUserNotificationCenterDelegate
+    // MARK: - UNUserNotificationCenterDelegate (kept for backward compatibility)
 
-    // When app is in foreground, suppress system banner (custom panel handles it)
-    // Play sound only — the custom floating panel provides the visual
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-        completionHandler([.sound])
+        // Suppress all native notifications — custom panel handles everything
+        completionHandler([])
     }
 
-    // Handle notification actions
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
-        let userInfo = response.notification.request.content.userInfo
-
-        if response.actionIdentifier == joinAction || response.actionIdentifier == UNNotificationDefaultActionIdentifier {
-            if let urlString = userInfo["meetingURL"] as? String,
-               let url = URL(string: urlString) {
-                NSWorkspace.shared.open(url)
-            }
-        }
-
         completionHandler()
     }
 }
