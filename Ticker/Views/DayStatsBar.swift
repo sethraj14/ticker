@@ -22,35 +22,44 @@ struct DayStatsBar: View {
 
             Spacer()
 
-            // Meeting load indicator
-            Text(loadLabel)
-                .font(.system(size: 8, weight: .bold))
-                .foregroundStyle(loadColor.opacity(0.8))
-                .padding(.horizontal, 6)
-                .padding(.vertical, 3)
-                .background(loadColor.opacity(0.12))
-                .clipShape(RoundedRectangle(cornerRadius: 4))
+            // Free time remaining (8h working day)
+            HStack(spacing: 4) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 8))
+                    .foregroundStyle(freeTimeColor)
+                Text("\(formattedFreeTime) free")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(freeTimeColor)
+            }
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .background(freeTimeColor.opacity(0.1))
+            .clipShape(RoundedRectangle(cornerRadius: 4))
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 6)
     }
 
-    // MARK: - Load label
+    // MARK: - Free time
 
-    private var loadLabel: String {
-        let mins = totalMeetingMinutes
-        if mins == 0 { return "FREE" }
-        if mins <= 120 { return "LIGHT" }
-        if mins <= 300 { return "MODERATE" }
-        return "HEAVY"
+    private var freeMinutes: Int {
+        max(480 - totalMeetingMinutes, 0) // 8h = 480m
     }
 
-    private var loadColor: Color {
-        let mins = totalMeetingMinutes
-        if mins == 0 { return .green }
-        if mins <= 120 { return .green }
-        if mins <= 300 { return .yellow }
-        return .orange
+    private var freeTimeColor: Color {
+        let free = freeMinutes
+        if free >= 300 { return .green }   // 5h+ free
+        if free >= 120 { return .blue }    // 2-5h free
+        return .orange                      // under 2h free
+    }
+
+    private var formattedFreeTime: String {
+        let mins = freeMinutes
+        if mins < 60 { return "\(mins)m" }
+        let hours = mins / 60
+        let remaining = mins % 60
+        if remaining == 0 { return "\(hours)h" }
+        return "\(hours)h \(remaining)m"
     }
 
     // MARK: - Merged total time
