@@ -31,7 +31,7 @@ struct CreateEventView: View {
     @State private var showDeleteConfirm = false
     @State private var isDeleting = false
 
-    private let durations = [15, 30, 45, 60, 90, 120]
+    private let durations = [15, 30, 60, 120]
 
     private var isEditMode: Bool { editingEvent != nil }
 
@@ -282,6 +282,10 @@ struct CreateEventView: View {
 
     // MARK: - Manual Form
 
+    @State private var selectedHour: Int = Calendar.current.component(.hour, from: Date.now)
+    @State private var selectedMinute: Int = 0
+    @State private var isAM: Bool = Calendar.current.component(.hour, from: Date.now) < 12
+
     private var manualForm: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text(isEditMode ? "EVENT DETAILS" : "MANUAL ENTRY")
@@ -301,76 +305,83 @@ struct CreateEventView: View {
                     .textContentType(.none)
             }
 
-            // Date
+            // Date — 3 quick chips
             VStack(alignment: .leading, spacing: 6) {
                 Text("Date")
                     .font(.system(size: 11))
                     .foregroundStyle(.white.opacity(0.4))
 
-                // Quick date chips
                 HStack(spacing: 6) {
-                    dateChip("Today", date: Date.now)
-                    dateChip("Tomorrow", date: Calendar.current.date(byAdding: .day, value: 1, to: Date.now) ?? Date.now)
-                    dateChip("Day After", date: Calendar.current.date(byAdding: .day, value: 2, to: Date.now) ?? Date.now)
+                    dateButton("Today", date: Date.now)
+                    dateButton("Tomorrow", date: Calendar.current.date(byAdding: .day, value: 1, to: Date.now) ?? Date.now)
+                    dateButton("Day After", date: Calendar.current.date(byAdding: .day, value: 2, to: Date.now) ?? Date.now)
                 }
 
-                // Fallback full picker (hidden behind "Pick date" button)
-                DatePicker("", selection: $startDate, in: Date.now..., displayedComponents: .date)
-                    .datePickerStyle(.compact)
-                    .labelsHidden()
-                    .scaleEffect(0.85, anchor: .leading)
+                // Show selected date
+                Text(startDate.formatted(.dateTime.weekday(.wide).month(.abbreviated).day()))
+                    .font(.system(size: 10))
+                    .foregroundStyle(.white.opacity(0.25))
             }
 
-            // Time
+            // Time — Hour grid + Minute + AM/PM
             VStack(alignment: .leading, spacing: 6) {
                 Text("Time")
                     .font(.system(size: 11))
                     .foregroundStyle(.white.opacity(0.4))
 
-                // Quick time chips (common meeting times)
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 6) {
-                        ForEach([9, 10, 11, 12, 13, 14, 15, 16, 17], id: \.self) { hour in
-                            timeChip(hour: hour, minute: 0)
-                            timeChip(hour: hour, minute: 30)
+                HStack(spacing: 8) {
+                    // Hour selector (4x3 grid: 1-12)
+                    VStack(spacing: 3) {
+                        ForEach(0..<4, id: \.self) { row in
+                            HStack(spacing: 3) {
+                                ForEach(1...3, id: \.self) { col in
+                                    let hour = row * 3 + col
+                                    hourButton(hour)
+                                }
+                            }
                         }
                     }
-                }
 
-                // Fallback time picker
-                DatePicker("", selection: $startDate, displayedComponents: .hourAndMinute)
-                    .datePickerStyle(.compact)
-                    .labelsHidden()
-                    .scaleEffect(0.85, anchor: .leading)
+                    // Separator
+                    Rectangle()
+                        .fill(.white.opacity(0.08))
+                        .frame(width: 1, height: 80)
+
+                    // Minute + AM/PM
+                    VStack(spacing: 6) {
+                        // Minutes
+                        VStack(spacing: 3) {
+                            HStack(spacing: 3) {
+                                minuteButton(0)
+                                minuteButton(15)
+                            }
+                            HStack(spacing: 3) {
+                                minuteButton(30)
+                                minuteButton(45)
+                            }
+                        }
+
+                        // AM / PM toggle
+                        HStack(spacing: 0) {
+                            amPmButton("AM", isActive: isAM) { isAM = true; syncTimeToDate() }
+                            amPmButton("PM", isActive: !isAM) { isAM = false; syncTimeToDate() }
+                        }
+                        .background(RoundedRectangle(cornerRadius: 5).fill(.white.opacity(0.06)))
+                    }
+                }
             }
 
-            // Duration
+            // Duration — 4 clean options
             VStack(alignment: .leading, spacing: 6) {
                 Text("Duration")
                     .font(.system(size: 11))
                     .foregroundStyle(.white.opacity(0.4))
 
                 HStack(spacing: 6) {
-                    ForEach(durations, id: \.self) { mins in
-                        Button {
+                    ForEach([15, 30, 60, 120], id: \.self) { mins in
+                        chipButton(durationLabel(mins), isSelected: selectedDuration == mins) {
                             selectedDuration = mins
-                        } label: {
-                            Text(durationLabel(mins))
-                                .font(.system(size: 11, weight: selectedDuration == mins ? .semibold : .regular))
-                                .foregroundStyle(selectedDuration == mins ? .white : .white.opacity(0.5))
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 6)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .fill(selectedDuration == mins ? .blue.opacity(0.3) : .white.opacity(0.06))
-                                )
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .strokeBorder(selectedDuration == mins ? .blue.opacity(0.5) : .clear, lineWidth: 1)
-                                )
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("Duration \(durationLabel(mins))")
                     }
                 }
             }
@@ -378,6 +389,117 @@ struct CreateEventView: View {
         .padding(12)
         .background(RoundedRectangle(cornerRadius: 10).fill(.white.opacity(0.04)))
         .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(.white.opacity(0.08), lineWidth: 1))
+        .onAppear { syncDateToTime() }
+    }
+
+    // MARK: - Time sync helpers
+
+    private func syncDateToTime() {
+        let cal = Calendar.current
+        let h = cal.component(.hour, from: startDate)
+        let m = cal.component(.minute, from: startDate)
+        isAM = h < 12
+        selectedHour = h == 0 ? 12 : (h > 12 ? h - 12 : h)
+        selectedMinute = m
+    }
+
+    private func syncTimeToDate() {
+        let cal = Calendar.current
+        var hour24 = selectedHour
+        if isAM {
+            if hour24 == 12 { hour24 = 0 }
+        } else {
+            if hour24 != 12 { hour24 += 12 }
+        }
+        var components = cal.dateComponents([.year, .month, .day], from: startDate)
+        components.hour = hour24
+        components.minute = selectedMinute
+        if let newDate = cal.date(from: components) {
+            startDate = newDate
+        }
+    }
+
+    // MARK: - Reusable button components
+
+    private func hourButton(_ hour: Int) -> some View {
+        let isSelected = selectedHour == hour
+        return Button {
+            selectedHour = hour
+            syncTimeToDate()
+        } label: {
+            Text("\(hour)")
+                .font(.system(size: 11, weight: isSelected ? .bold : .regular, design: .rounded))
+                .foregroundStyle(isSelected ? .white : .white.opacity(0.4))
+                .frame(width: 28, height: 26)
+                .background(
+                    RoundedRectangle(cornerRadius: 5)
+                        .fill(isSelected ? .blue.opacity(0.35) : .clear)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func minuteButton(_ minute: Int) -> some View {
+        let isSelected = selectedMinute == minute
+        return Button {
+            selectedMinute = minute
+            syncTimeToDate()
+        } label: {
+            Text(":\(String(format: "%02d", minute))")
+                .font(.system(size: 11, weight: isSelected ? .bold : .regular, design: .monospaced))
+                .foregroundStyle(isSelected ? .white : .white.opacity(0.4))
+                .frame(width: 36, height: 26)
+                .background(
+                    RoundedRectangle(cornerRadius: 5)
+                        .fill(isSelected ? .blue.opacity(0.35) : .clear)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func amPmButton(_ label: String, isActive: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(label)
+                .font(.system(size: 10, weight: isActive ? .bold : .medium))
+                .foregroundStyle(isActive ? .white : .white.opacity(0.3))
+                .frame(width: 36, height: 24)
+                .background(isActive ? RoundedRectangle(cornerRadius: 5).fill(.blue.opacity(0.35)) : nil)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func chipButton(_ label: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(label)
+                .font(.system(size: 11, weight: isSelected ? .semibold : .regular))
+                .foregroundStyle(isSelected ? .white : .white.opacity(0.5))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(isSelected ? .blue.opacity(0.3) : .white.opacity(0.06))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .strokeBorder(isSelected ? .blue.opacity(0.5) : .clear, lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func dateButton(_ label: String, date: Date) -> some View {
+        let cal = Calendar.current
+        let isSelected = cal.isDate(startDate, inSameDayAs: date)
+        return chipButton(label, isSelected: isSelected) {
+            var components = cal.dateComponents([.hour, .minute], from: startDate)
+            let dayComponents = cal.dateComponents([.year, .month, .day], from: date)
+            components.year = dayComponents.year
+            components.month = dayComponents.month
+            components.day = dayComponents.day
+            if let newDate = cal.date(from: components) {
+                startDate = newDate
+            }
+        }
     }
 
     // MARK: - Guest Section
@@ -864,75 +986,6 @@ struct CreateEventView: View {
         return "\(h).\(m * 10 / 60)h"
     }
 
-    // MARK: - Date/Time Chips
-
-    private func dateChip(_ label: String, date: Date) -> some View {
-        let cal = Calendar.current
-        let isSelected = cal.isDate(startDate, inSameDayAs: date)
-        return Button {
-            // Preserve the current time, just change the date
-            var components = cal.dateComponents([.hour, .minute], from: startDate)
-            let dayComponents = cal.dateComponents([.year, .month, .day], from: date)
-            components.year = dayComponents.year
-            components.month = dayComponents.month
-            components.day = dayComponents.day
-            if let newDate = cal.date(from: components) {
-                startDate = newDate
-            }
-        } label: {
-            Text(label)
-                .font(.system(size: 11, weight: isSelected ? .semibold : .regular))
-                .foregroundStyle(isSelected ? .white : .white.opacity(0.5))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(isSelected ? .blue.opacity(0.3) : .white.opacity(0.06))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6)
-                        .strokeBorder(isSelected ? .blue.opacity(0.5) : .clear, lineWidth: 1)
-                )
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func timeChip(hour: Int, minute: Int) -> some View {
-        let cal = Calendar.current
-        let currentHour = cal.component(.hour, from: startDate)
-        let currentMinute = cal.component(.minute, from: startDate)
-        let isSelected = currentHour == hour && currentMinute == minute
-
-        let label: String = {
-            let h = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour)
-            let period = hour >= 12 ? "PM" : "AM"
-            return minute == 0 ? "\(h) \(period)" : "\(h):\(String(format: "%02d", minute)) \(period)"
-        }()
-
-        return Button {
-            var components = cal.dateComponents([.year, .month, .day], from: startDate)
-            components.hour = hour
-            components.minute = minute
-            if let newDate = cal.date(from: components) {
-                startDate = newDate
-            }
-        } label: {
-            Text(label)
-                .font(.system(size: 10, weight: isSelected ? .semibold : .regular))
-                .foregroundStyle(isSelected ? .white : .white.opacity(0.5))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 5)
-                .background(
-                    RoundedRectangle(cornerRadius: 5)
-                        .fill(isSelected ? .blue.opacity(0.3) : .white.opacity(0.06))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 5)
-                        .strokeBorder(isSelected ? .blue.opacity(0.5) : .clear, lineWidth: 1)
-                )
-        }
-        .buttonStyle(.plain)
-    }
 }
 
 // MARK: - Flow Layout (wrapping horizontal layout for guest chips)
