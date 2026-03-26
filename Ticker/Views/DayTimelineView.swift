@@ -126,11 +126,10 @@ struct DayTimelineView: View {
             let leftX = (lineStart + colWidth * CGFloat(le.column)).rounded(.down)
             let isSelected = selectedEventID == le.event.id
 
-            MeetingBlockView(event: le.event, isSelected: isSelected) {
+            MeetingBlockView(event: le.event, isSelected: isSelected, availableHeight: height) {
                 onSelectEvent(le.event)
             }
             .frame(width: colWidth - 2, height: height)
-            .clipped()
             .timelinePosition(x: leftX, y: topY)
         }
     }
