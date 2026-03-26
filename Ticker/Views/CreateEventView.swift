@@ -27,6 +27,9 @@ struct CreateEventView: View {
     @State private var guestInput: String = ""
     @State private var guests: [EventAttendee] = []
 
+    // Time input
+    @State private var timeInput: String = ""
+
     // Custom duration
     @State private var showCustomDuration = false
     @State private var customDurationText = ""
@@ -101,7 +104,11 @@ struct CreateEventView: View {
                 selectedDuration = event.durationMinutes
                 guests = event.attendees
                 showManualForm = true
+                timeInput = event.startDate.formatted(date: .omitted, time: .shortened)
+            } else {
+                timeInput = startDate.formatted(date: .omitted, time: .shortened)
             }
+            syncDateToTime()
         }
     }
 
@@ -327,93 +334,86 @@ struct CreateEventView: View {
                     .foregroundStyle(.white.opacity(0.25))
             }
 
-            // Time — compact dropdown row
+            // Time — text input (type "3pm", "3:30 PM", "15:00")
             VStack(alignment: .leading, spacing: 6) {
                 Text("Time")
                     .font(.system(size: 11))
                     .foregroundStyle(.white.opacity(0.4))
 
                 HStack(spacing: 8) {
-                    // Hour dropdown
-                    Picker("", selection: $selectedHour) {
-                        ForEach(1...12, id: \.self) { h in
-                            Text("\(h)").tag(h)
-                        }
+                    TextField("e.g. 3pm, 3:30 PM", text: $timeInput)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.system(size: 13))
+                        .disableAutocorrection(true)
+                        .textContentType(.none)
+                        .onChange(of: timeInput) { _ in parseTimeInput() }
+                        .onSubmit { parseTimeInput() }
+
+                    // Show parsed time feedback
+                    if !timeInput.isEmpty {
+                        Text(startDate.formatted(date: .omitted, time: .shortened))
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(.green.opacity(0.7))
                     }
-                    .pickerStyle(.menu)
-                    .frame(width: 55)
-                    .labelsHidden()
-
-                    Text(":")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(.white.opacity(0.4))
-
-                    // Minute dropdown
-                    Picker("", selection: $selectedMinute) {
-                        ForEach([0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55], id: \.self) { m in
-                            Text(String(format: "%02d", m)).tag(m)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                    .frame(width: 55)
-                    .labelsHidden()
-
-                    // AM/PM toggle
-                    Picker("", selection: $isAM) {
-                        Text("AM").tag(true)
-                        Text("PM").tag(false)
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(width: 80)
-                    .labelsHidden()
-
-                    Spacer()
                 }
-                .onChange(of: selectedHour) { _ in syncTimeToDate() }
-                .onChange(of: selectedMinute) { _ in syncTimeToDate() }
-                .onChange(of: isAM) { _ in syncTimeToDate() }
             }
 
-            // Duration
+            // Duration — dropdown + custom
             VStack(alignment: .leading, spacing: 6) {
                 Text("Duration")
                     .font(.system(size: 11))
                     .foregroundStyle(.white.opacity(0.4))
 
-                HStack(spacing: 5) {
-                    ForEach([15, 30, 45, 60, 90, 120], id: \.self) { mins in
-                        chipButton(durationLabel(mins), isSelected: selectedDuration == mins && !showCustomDuration) {
-                            selectedDuration = mins
-                            showCustomDuration = false
+                HStack(spacing: 8) {
+                    // Main duration selector as a styled menu button
+                    Menu {
+                        ForEach([15, 30, 45, 60, 90, 120, 180, 240], id: \.self) { mins in
+                            Button(durationLabel(mins)) {
+                                selectedDuration = mins
+                                showCustomDuration = false
+                            }
+                        }
+                        Divider()
+                        Button("Custom...") {
+                            showCustomDuration = true
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Text(showCustomDuration ? "\(selectedDuration)m" : durationLabel(selectedDuration))
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(.white)
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 9, weight: .semibold))
+                                .foregroundStyle(.white.opacity(0.4))
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(.white.opacity(0.08))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .strokeBorder(.white.opacity(0.12), lineWidth: 1)
+                                )
+                        )
+                    }
+
+                    // Custom duration inline input
+                    if showCustomDuration {
+                        HStack(spacing: 4) {
+                            TextField("min", text: $customDurationText)
+                                .textFieldStyle(.roundedBorder)
+                                .font(.system(size: 12))
+                                .frame(width: 50)
+                                .disableAutocorrection(true)
+                                .onSubmit { applyCustomDuration() }
+                            Text("min")
+                                .font(.system(size: 10))
+                                .foregroundStyle(.white.opacity(0.3))
                         }
                     }
 
-                    // Custom duration toggle
-                    chipButton("...", isSelected: showCustomDuration) {
-                        showCustomDuration.toggle()
-                    }
-                }
-
-                // Custom duration input
-                if showCustomDuration {
-                    HStack(spacing: 6) {
-                        TextField("", text: $customDurationText)
-                            .textFieldStyle(.roundedBorder)
-                            .font(.system(size: 12, design: .monospaced))
-                            .frame(width: 50)
-                            .disableAutocorrection(true)
-                            .onSubmit { applyCustomDuration() }
-
-                        Text("minutes")
-                            .font(.system(size: 11))
-                            .foregroundStyle(.white.opacity(0.35))
-
-                        Button("Set") { applyCustomDuration() }
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(.blue)
-                            .buttonStyle(.plain)
-                            .disabled(Int(customDurationText) == nil)
-                    }
+                    Spacer()
                 }
             }
         }
@@ -432,6 +432,60 @@ struct CreateEventView: View {
         isAM = h < 12
         selectedHour = h == 0 ? 12 : (h > 12 ? h - 12 : h)
         selectedMinute = m
+    }
+
+    /// Parse time from text input like "3pm", "3:30 PM", "15:00", "10am"
+    private func parseTimeInput() {
+        let text = timeInput.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !text.isEmpty else { return }
+
+        let cal = Calendar.current
+        var hour: Int?
+        var minute: Int = 0
+
+        // Match "3:30pm", "12:00am"
+        if let match = text.range(of: #"^(\d{1,2}):(\d{2})\s*(am|pm)?$"#, options: .regularExpression) {
+            let matched = String(text[match])
+            let parts = matched.components(separatedBy: CharacterSet.decimalDigits.inverted).filter { !$0.isEmpty }
+            if parts.count >= 2 { hour = Int(parts[0]); minute = Int(parts[1]) ?? 0 }
+            let isPM = matched.contains("pm")
+            let isAM = matched.contains("am")
+            if let h = hour {
+                if isPM && h < 12 { hour = h + 12 }
+                if isAM && h == 12 { hour = 0 }
+            }
+        }
+        // Match "3pm", "10am", "12pm"
+        else if let match = text.range(of: #"^(\d{1,2})\s*(am|pm)$"#, options: .regularExpression) {
+            let matched = String(text[match])
+            let numStr = matched.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
+            hour = Int(numStr)
+            let isPM = matched.contains("pm")
+            let isAM = matched.contains("am")
+            if let h = hour {
+                if isPM && h < 12 { hour = h + 12 }
+                if isAM && h == 12 { hour = 0 }
+            }
+        }
+        // Match 24h "15:00", "09:30"
+        else if let match = text.range(of: #"^(\d{1,2}):(\d{2})$"#, options: .regularExpression) {
+            let matched = String(text[match])
+            let parts = matched.split(separator: ":").compactMap { Int($0) }
+            if parts.count == 2 { hour = parts[0]; minute = parts[1] }
+        }
+
+        guard let h = hour, h >= 0, h < 24, minute >= 0, minute < 60 else { return }
+
+        var components = cal.dateComponents([.year, .month, .day], from: startDate)
+        components.hour = h
+        components.minute = minute
+        if let newDate = cal.date(from: components) {
+            startDate = newDate
+            // Update internal state
+            selectedHour = h == 0 ? 12 : (h > 12 ? h - 12 : h)
+            selectedMinute = minute
+            isAM = h < 12
+        }
     }
 
     private func applyCustomDuration() {
