@@ -19,6 +19,7 @@ struct CreateEventView: View {
     @State private var selectedDuration: Int = 30 // minutes
     @State private var isCreating = false
     @State private var showSuccess = false
+    @State private var errorMessage: String?
     @State private var showManualForm = false
 
     private let durations = [15, 30, 45, 60, 90, 120]
@@ -32,18 +33,22 @@ struct CreateEventView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     if LicenseManager.shared.isPro {
-                        naturalLanguageSection
+                        // Mode toggle: Quick Add vs Manual
+                        modePicker
 
-                        if let parsed = parsedEvent {
-                            parsedPreview(parsed)
-                        }
+                        if !showManualForm {
+                            naturalLanguageSection
 
-                        if parsedEvent == nil && !showManualForm {
-                            manualFormToggle
-                        }
-
-                        if showManualForm {
+                            if let parsed = parsedEvent {
+                                parsedPreview(parsed)
+                            }
+                        } else {
                             manualForm
+                        }
+
+                        // Error message
+                        if let error = errorMessage {
+                            errorBanner(error)
                         }
 
                         createButton
@@ -186,23 +191,51 @@ struct CreateEventView: View {
         .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(.green.opacity(0.15), lineWidth: 1))
     }
 
-    // MARK: - Manual Form Toggle
+    // MARK: - Mode Picker
 
-    private var manualFormToggle: some View {
-        Button {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                showManualForm = true
+    private var modePicker: some View {
+        HStack(spacing: 0) {
+            modeButton(label: "Quick Add", icon: "bolt.fill", isActive: !showManualForm) {
+                withAnimation(.easeInOut(duration: 0.2)) { showManualForm = false }
             }
-        } label: {
-            HStack(spacing: 4) {
-                Image(systemName: "square.and.pencil")
-                    .font(.system(size: 11))
-                Text("Or add manually")
-                    .font(.system(size: 12, weight: .medium))
+            modeButton(label: "Manual", icon: "square.and.pencil", isActive: showManualForm) {
+                withAnimation(.easeInOut(duration: 0.2)) { showManualForm = true }
             }
-            .foregroundStyle(.blue.opacity(0.8))
+        }
+        .background(RoundedRectangle(cornerRadius: 8).fill(.white.opacity(0.06)))
+    }
+
+    private func modeButton(label: String, icon: String, isActive: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Image(systemName: icon)
+                    .font(.system(size: 10))
+                Text(label)
+                    .font(.system(size: 11, weight: .medium))
+            }
+            .foregroundStyle(isActive ? .white : .white.opacity(0.35))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+            .background(isActive ? RoundedRectangle(cornerRadius: 7).fill(.white.opacity(0.1)) : nil)
         }
         .buttonStyle(.plain)
+    }
+
+    // MARK: - Error Banner
+
+    private func errorBanner(_ message: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 11))
+            Text(message)
+                .font(.system(size: 11))
+                .lineLimit(3)
+        }
+        .foregroundStyle(.orange)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(10)
+        .background(RoundedRectangle(cornerRadius: 8).fill(.orange.opacity(0.1)))
+        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.orange.opacity(0.2), lineWidth: 1))
     }
 
     // MARK: - Manual Form
@@ -348,17 +381,18 @@ struct CreateEventView: View {
 
     private func createEvent() async {
         isCreating = true
-        let success: Bool
+        errorMessage = nil
+        let result: GoogleCalendarService.CreateResult
 
         if let parsed = parsedEvent {
-            success = await viewModel.googleService.createEvent(
+            result = await viewModel.googleService.createEvent(
                 title: parsed.title,
                 startDate: parsed.startDate,
                 endDate: parsed.endDate
             )
         } else {
             let endDate = startDate.addingTimeInterval(TimeInterval(selectedDuration * 60))
-            success = await viewModel.googleService.createEvent(
+            result = await viewModel.googleService.createEvent(
                 title: title,
                 startDate: startDate,
                 endDate: endDate
@@ -367,22 +401,22 @@ struct CreateEventView: View {
 
         isCreating = false
 
-        if success {
+        switch result {
+        case .success:
             showSuccess = true
             naturalInput = ""
             parsedEvent = nil
             title = ""
-            showManualForm = false
 
-            // Refresh events after a short delay to let the API propagate
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                 viewModel.refreshAll()
             }
-
-            // Auto-dismiss success banner
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
                 withAnimation { showSuccess = false }
             }
+
+        case .error(let message):
+            errorMessage = message
         }
     }
 

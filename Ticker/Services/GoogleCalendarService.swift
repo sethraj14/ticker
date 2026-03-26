@@ -171,16 +171,24 @@ final class GoogleCalendarService: ObservableObject {
 
     /// Create a new event on the user's primary Google Calendar.
     /// Uses the first connected account unless accountId is specified.
+    /// Result of creating an event — success or a user-friendly error message.
+    enum CreateResult {
+        case success
+        case error(String)
+    }
+
     func createEvent(
         title: String,
         startDate: Date,
         endDate: Date,
         description: String? = nil,
         accountId: String? = nil
-    ) async -> Bool {
+    ) async -> CreateResult {
         let account = accountId.flatMap({ id in accounts.first { $0.id == id } }) ?? accounts.first
-        guard let account else { return false }
-        guard let token = await getValidAccessToken(for: account) else { return false }
+        guard let account else { return .error("No Google account connected.") }
+        guard let token = await getValidAccessToken(for: account) else {
+            return .error("Could not refresh token. Try removing and re-adding your account.")
+        }
 
         let url = URL(string: "\(calendarBaseURL)/calendars/primary/events")!
         var request = URLRequest(url: url)
@@ -198,17 +206,26 @@ final class GoogleCalendarService: ObservableObject {
         ]
         if let description { body["description"] = description }
 
-        guard let jsonData = try? JSONSerialization.data(withJSONObject: body) else { return false }
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: body) else {
+            return .error("Failed to build request.")
+        }
         request.httpBody = jsonData
 
         do {
-            let (_, response) = try await URLSession.shared.data(for: request)
-            if let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) {
-                return true
+            let (data, response) = try await URLSession.shared.data(for: request)
+            if let http = response as? HTTPURLResponse {
+                if (200...299).contains(http.statusCode) {
+                    return .success
+                }
+                if http.statusCode == 403 {
+                    return .error("Permission denied. Remove and re-add your Google account to grant calendar write access.")
+                }
+                let errorBody = String(data: data, encoding: .utf8) ?? "Unknown error"
+                return .error("Google API error (\(http.statusCode)): \(errorBody.prefix(100))")
             }
-            return false
+            return .error("No response from Google.")
         } catch {
-            return false
+            return .error("Network error: \(error.localizedDescription)")
         }
     }
 

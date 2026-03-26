@@ -57,10 +57,11 @@ enum NaturalLanguageParser {
 
     // MARK: - Duration Extraction
 
-    /// Extract duration patterns: "45min", "45m", "1h", "1h30m", "1.5h", "90min"
+    /// Extract duration patterns: "45min", "45m", "1h", "1h30m", "1.5h", "90min",
+    /// "2 hours", "2hour", "30 minutes", "1 hr", "1.5 hours"
     private static func extractDuration(from text: inout String) -> TimeInterval? {
-        // Match "1h30m", "1h 30m"
-        if let match = text.range(of: #"(\d+)h\s*(\d+)m(?:in)?"#, options: .regularExpression) {
+        // Match compound: "1h30m", "1h 30m", "1 hour 30 min", "1h 30min"
+        if let match = text.range(of: #"(\d+)\s*h(?:r|rs|our|ours)?\s*(\d+)\s*m(?:in(?:ute)?s?)?"#, options: .regularExpression) {
             let matched = String(text[match])
             let nums = matched.components(separatedBy: CharacterSet.decimalDigits.inverted).filter { !$0.isEmpty }
             if nums.count == 2, let h = Int(nums[0]), let m = Int(nums[1]) {
@@ -68,8 +69,8 @@ enum NaturalLanguageParser {
                 return TimeInterval(h * 3600 + m * 60)
             }
         }
-        // Match "1.5h", "2h", "1hr"
-        if let match = text.range(of: #"(\d+\.?\d*)h(?:r|our)?s?"#, options: .regularExpression) {
+        // Match hours: "1.5h", "2h", "1hr", "2 hours", "2hour", "1.5 hours", "1 hr"
+        if let match = text.range(of: #"(\d+\.?\d*)\s*h(?:r|rs|our|ours)?"#, options: .regularExpression) {
             let matched = String(text[match])
             let numStr = matched.components(separatedBy: CharacterSet(charactersIn: "0123456789.").inverted).joined()
             if let hours = Double(numStr) {
@@ -77,7 +78,7 @@ enum NaturalLanguageParser {
                 return TimeInterval(hours * 3600)
             }
         }
-        // Match "45min", "45m", "30 min"
+        // Match minutes: "45min", "45m", "30 min", "30 minutes", "45 mins"
         if let match = text.range(of: #"(\d+)\s*m(?:in(?:ute)?s?)?"#, options: .regularExpression) {
             let matched = String(text[match])
             let numStr = matched.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
