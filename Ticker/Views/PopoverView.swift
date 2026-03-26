@@ -116,7 +116,8 @@ struct PopoverView: View {
 
             JoinSection(
                 event: viewModel.joinSectionEvent,
-                isToday: Calendar.current.isDateInToday(viewModel.selectedDate)
+                isToday: Calendar.current.isDateInToday(viewModel.selectedDate),
+                allTimedEvents: timedEvents
             )
 
             Rectangle()
