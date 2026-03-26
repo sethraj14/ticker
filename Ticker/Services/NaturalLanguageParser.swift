@@ -3,211 +3,139 @@ import Foundation
 struct ParsedEvent {
     let title: String
     let startDate: Date
-    let duration: TimeInterval // in seconds
+    let duration: TimeInterval
     var endDate: Date { startDate.addingTimeInterval(duration) }
 }
 
+/// Parses natural language event descriptions using Apple's NSDataDetector
+/// for date/time recognition + simple duration extraction.
+///
+/// Strategy: find dates/times via NSDataDetector, extract duration via pattern matching,
+/// then everything remaining is the title. No fragile regex removal chains.
 enum NaturalLanguageParser {
-    /// Parse natural language like "Team sync tomorrow 3pm 45min"
+
     static func parse(_ input: String) -> ParsedEvent? {
         let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return nil }
 
-        var remaining = text
+        // Step 1: Extract duration FIRST (NSDataDetector doesn't handle "for 2 hours" as duration)
+        let (durationValue, textAfterDuration) = extractDuration(from: text)
 
-        // Extract duration (look for patterns like "45min", "1h", "1h30m", "30m")
-        let duration = extractDuration(from: &remaining)
+        // Step 2: Use NSDataDetector to find date/time in the remaining text
+        let (detectedDate, textAfterDate) = extractDate(from: textAfterDuration)
 
-        // Extract time (look for "3pm", "15:00", "3:30pm", "10am")
-        let time = extractTime(from: &remaining)
-
-        // Extract date reference (today, tomorrow, day names like "Friday", "next Monday")
-        let dateRef = extractDateReference(from: &remaining)
-
-        // Clean up dangling prepositions/connectors left after extraction
-        remaining = cleanupFillerWords(remaining)
-
-        // Whatever's left is the title
-        let title = remaining.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Step 3: Clean up the remaining text to get the title
+        let title = cleanTitle(textAfterDate)
         guard !title.isEmpty else { return nil }
 
-        // Time is required
-        guard let time else { return nil }
-        let calendar = Calendar.current
-        let targetDate = dateRef ?? Date.now
+        // Step 4: Build the final date
+        // We need at least a time. If NSDataDetector found nothing, bail out.
+        guard let date = detectedDate else { return nil }
 
-        // Combine date + time
-        var components = calendar.dateComponents([.year, .month, .day], from: targetDate)
-        components.hour = time.hour
-        components.minute = time.minute
+        let duration = durationValue ?? 1800 // default 30 min
 
-        guard let startDate = calendar.date(from: components) else { return nil }
+        return ParsedEvent(title: title, startDate: date, duration: duration)
+    }
 
-        // If the resulting date is in the past and no explicit date was given, assume tomorrow
-        let finalDate: Date
-        if startDate < Date.now && dateRef == nil {
-            finalDate = calendar.date(byAdding: .day, value: 1, to: startDate) ?? startDate
-        } else {
-            finalDate = startDate
+    // MARK: - Date Extraction (NSDataDetector)
+
+    private static func extractDate(from text: String) -> (Date?, String) {
+        guard let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.date.rawValue) else {
+            return (nil, text)
         }
 
-        return ParsedEvent(
-            title: title,
-            startDate: finalDate,
-            duration: duration ?? 1800 // default 30 min
-        )
+        let range = NSRange(text.startIndex..<text.endIndex, in: text)
+        let matches = detector.matches(in: text, options: [], range: range)
+
+        guard let match = matches.first, let date = match.date else {
+            return (nil, text)
+        }
+
+        // Remove the matched date text from the string
+        let matchRange = Range(match.range, in: text)!
+        var remaining = text
+        remaining.replaceSubrange(matchRange, with: "")
+
+        // If detected date is in the past and it's today, push to tomorrow
+        let calendar = Calendar.current
+        if date < Date.now && calendar.isDateInToday(date) {
+            let tomorrow = calendar.date(byAdding: .day, value: 1, to: date)
+            return (tomorrow, remaining)
+        }
+
+        return (date, remaining)
     }
 
     // MARK: - Duration Extraction
 
-    /// Extract duration patterns: "45min", "45m", "1h", "1h30m", "1.5h", "90min",
-    /// "2 hours", "2hour", "30 minutes", "1 hr", "1.5 hours"
-    private static func extractDuration(from text: inout String) -> TimeInterval? {
-        // Match compound: "1h30m", "1h 30m", "1 hour 30 min", "1h 30min"
-        if let match = text.range(of: #"(\d+)\s*h(?:r|rs|our|ours)?\s*(\d+)\s*m(?:in(?:ute)?s?)?"#, options: .regularExpression) {
-            let matched = String(text[match])
+    private static func extractDuration(from text: String) -> (TimeInterval?, String) {
+        var remaining = text
+
+        // Compound: "1h30m", "1 hour 30 min", "1h 30min"
+        if let match = remaining.range(of: #"(\d+)\s*(?:h|hr|hrs|hour|hours)\s*(\d+)\s*(?:m|min|mins|minute|minutes)"#, options: [.regularExpression, .caseInsensitive]) {
+            let matched = String(remaining[match])
             let nums = matched.components(separatedBy: CharacterSet.decimalDigits.inverted).filter { !$0.isEmpty }
             if nums.count == 2, let h = Int(nums[0]), let m = Int(nums[1]) {
-                text.removeSubrange(match)
-                return TimeInterval(h * 3600 + m * 60)
+                remaining.removeSubrange(match)
+                return (TimeInterval(h * 3600 + m * 60), remaining)
             }
         }
-        // Match hours: "1.5h", "2h", "1hr", "2 hours", "2hour", "1.5 hours", "1 hr"
-        if let match = text.range(of: #"(\d+\.?\d*)\s*h(?:r|rs|our|ours)?"#, options: .regularExpression) {
-            let matched = String(text[match])
+
+        // Hours: "2h", "2 hours", "2hour", "1.5h", "1.5 hours"
+        if let match = remaining.range(of: #"(\d+\.?\d*)\s*(?:h|hr|hrs|hour|hours)\b"#, options: [.regularExpression, .caseInsensitive]) {
+            let matched = String(remaining[match])
             let numStr = matched.components(separatedBy: CharacterSet(charactersIn: "0123456789.").inverted).joined()
-            if let hours = Double(numStr) {
-                text.removeSubrange(match)
-                return TimeInterval(hours * 3600)
+            if let hours = Double(numStr), hours > 0 {
+                remaining.removeSubrange(match)
+                return (TimeInterval(hours * 3600), remaining)
             }
         }
-        // Match minutes: "45min", "45m", "30 min", "30 minutes", "45 mins"
-        if let match = text.range(of: #"(\d+)\s*m(?:in(?:ute)?s?)?"#, options: .regularExpression) {
-            let matched = String(text[match])
+
+        // Minutes: "30m", "30 min", "45 minutes", "30mins"
+        if let match = remaining.range(of: #"(\d+)\s*(?:m|min|mins|minute|minutes)\b"#, options: [.regularExpression, .caseInsensitive]) {
+            let matched = String(remaining[match])
             let numStr = matched.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
-            if let mins = Int(numStr) {
-                text.removeSubrange(match)
-                return TimeInterval(mins * 60)
+            if let mins = Int(numStr), mins > 0 {
+                remaining.removeSubrange(match)
+                return (TimeInterval(mins * 60), remaining)
             }
         }
-        return nil
+
+        return (nil, remaining)
     }
 
-    // MARK: - Time Extraction
+    // MARK: - Title Cleanup
 
-    /// Extract time patterns: "3pm", "3:30pm", "15:00", "10am"
-    private static func extractTime(from text: inout String) -> (hour: Int, minute: Int)? {
-        // Match "3:30pm", "12:00am", "10:15 AM"
-        if let match = text.range(of: #"(\d{1,2}):(\d{2})\s*(am|pm|AM|PM)"#, options: .regularExpression) {
-            let matched = String(text[match])
-            let parts = matched.components(separatedBy: CharacterSet(charactersIn: "0123456789").inverted).filter { !$0.isEmpty }
-            let isPM = matched.lowercased().contains("pm")
-            if parts.count >= 2, var hour = Int(parts[0]), let minute = Int(parts[1]) {
-                if isPM && hour < 12 { hour += 12 }
-                if !isPM && hour == 12 { hour = 0 }
-                text.removeSubrange(match)
-                return (hour, minute)
-            }
-        }
-        // Match "3pm", "10am", "12 PM"
-        if let match = text.range(of: #"(\d{1,2})\s*(am|pm|AM|PM)"#, options: .regularExpression) {
-            let matched = String(text[match])
-            let numStr = matched.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
-            let isPM = matched.lowercased().contains("pm")
-            if var hour = Int(numStr) {
-                if isPM && hour < 12 { hour += 12 }
-                if !isPM && hour == 12 { hour = 0 }
-                text.removeSubrange(match)
-                return (hour, 0)
-            }
-        }
-        // Match 24h format "15:00", "09:30"
-        if let match = text.range(of: #"(\d{1,2}):(\d{2})"#, options: .regularExpression) {
-            let matched = String(text[match])
-            let parts = matched.split(separator: ":").compactMap { Int($0) }
-            if parts.count == 2, parts[0] < 24, parts[1] < 60 {
-                text.removeSubrange(match)
-                return (parts[0], parts[1])
-            }
-        }
-        return nil
-    }
-
-    // MARK: - Date Reference Extraction
-
-    /// Extract date reference: "today", "tomorrow", "Monday", "next Friday", etc.
-    private static func extractDateReference(from text: inout String) -> Date? {
-        let calendar = Calendar.current
-        let hasNext = text.lowercased().contains("next")
-
-        if let match = text.range(of: #"\bday after tomorrow\b"#, options: [.regularExpression, .caseInsensitive]) {
-            text.removeSubrange(match)
-            return calendar.date(byAdding: .day, value: 2, to: Date.now)
-        }
-        if let match = text.range(of: #"\btomorrow\b"#, options: [.regularExpression, .caseInsensitive]) {
-            text.removeSubrange(match)
-            return calendar.date(byAdding: .day, value: 1, to: Date.now)
-        }
-        if let match = text.range(of: #"\btoday\b"#, options: [.regularExpression, .caseInsensitive]) {
-            text.removeSubrange(match)
-            return Date.now
-        }
-
-        // Day names: "Monday", "Tuesday", etc. (next occurrence)
-        let dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
-        for (index, name) in dayNames.enumerated() {
-            let pattern = #"\bnext\s+"# + name + #"\b"#
-            if let match = text.range(of: pattern, options: [.regularExpression, .caseInsensitive]) {
-                text.removeSubrange(match)
-                let today = calendar.component(.weekday, from: Date.now)
-                let targetDay = index + 1
-                var daysAhead = targetDay - today
-                if daysAhead <= 0 { daysAhead += 7 }
-                daysAhead += 7 // "next" always means next week
-                return calendar.date(byAdding: .day, value: daysAhead, to: Date.now)
-            }
-
-            let simplePattern = #"\b"# + name + #"\b"#
-            if let match = text.range(of: simplePattern, options: [.regularExpression, .caseInsensitive]) {
-                text.removeSubrange(match)
-                let today = calendar.component(.weekday, from: Date.now)
-                let targetDay = index + 1
-                var daysAhead = targetDay - today
-                if daysAhead <= 0 { daysAhead += 7 }
-                return calendar.date(byAdding: .day, value: daysAhead, to: Date.now)
-            }
-        }
-
-        return nil
-    }
-
-    // MARK: - Cleanup
-
-    /// Remove dangling prepositions and connectors left after extraction.
-    /// e.g., "Test event  for  from " → "Test event"
-    private static func cleanupFillerWords(_ text: String) -> String {
+    private static func cleanTitle(_ text: String) -> String {
         var result = text
-        // Remove standalone filler words (at word boundaries)
-        let fillers = ["for", "from", "at", "on", "in", "the", "with", "of", "starting", "lasting"]
-        for filler in fillers {
-            // Remove filler word only when it's standalone (surrounded by spaces or at edges)
-            let pattern = #"\b"# + filler + #"\b"#
-            // Only remove if the word is at the start/end or surrounded by multiple spaces (dangling)
-            while let match = result.range(of: #"(?:^|\s+)"# + pattern + #"(?:\s+|$)"#, options: [.regularExpression, .caseInsensitive]) {
-                let before = result[result.startIndex..<match.lowerBound]
-                let after = result[match.upperBound..<result.endIndex]
-                // Only remove if it's at an edge or leaves the title intact
-                if before.isEmpty || after.isEmpty || before.last == " " || after.first == " " {
-                    result.replaceSubrange(match, with: before.isEmpty ? "" : " ")
-                } else {
-                    break
-                }
+
+        // Remove common dangling prepositions at word boundaries
+        let fillers = [
+            #"\bfor\s*$"#,          // trailing "for"
+            #"^\s*for\b"#,          // leading "for"
+            #"\bfrom\s*$"#,         // trailing "from"
+            #"^\s*from\b"#,         // leading "from"
+            #"\bat\s*$"#,           // trailing "at"
+            #"^\s*at\b"#,           // leading "at"
+            #"\bon\s*$"#,           // trailing "on"
+            #"^\s*on\b"#,           // leading "on"
+            #"\bin\s*$"#,           // trailing "in"
+            #"\bstarting\s*$"#,     // trailing "starting"
+            #"\blasting\s*$"#,      // trailing "lasting"
+            #"\bthe\s*$"#,          // trailing "the"
+        ]
+
+        for pattern in fillers {
+            if let match = result.range(of: pattern, options: [.regularExpression, .caseInsensitive]) {
+                result.removeSubrange(match)
             }
         }
-        // Collapse multiple spaces
+
+        // Collapse multiple spaces and trim
         while result.contains("  ") {
             result = result.replacingOccurrences(of: "  ", with: " ")
         }
+
         return result.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
