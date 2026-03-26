@@ -242,13 +242,13 @@ struct DayTimelineView: View {
             let isResizing = resizingEventID == le.event.id
             let isMoving = movingEventID == le.event.id
 
-            // Calculate dynamic height/position for resize/move
+            // Visual adjustments via offset (NOT layout position — avoids full relayout)
             let displayHeight = isResizing
                 ? max((resizeCurrentY ?? bottomY) - topY, 20)
                 : baseHeight
-            let displayY = isMoving
-                ? (moveCurrentY ?? topY)
-                : topY
+            let moveOffset = isMoving
+                ? (moveCurrentY ?? topY) - topY
+                : 0.0
 
             ZStack(alignment: .bottom) {
                 MeetingBlockView(event: le.event, isSelected: isSelected, availableHeight: displayHeight) {
@@ -329,7 +329,8 @@ struct DayTimelineView: View {
                 }
             }
             .frame(width: colWidth - 2, height: displayHeight)
-            .timelinePosition(x: leftX, y: displayY)
+            .timelinePosition(x: leftX, y: topY)
+            .offset(y: moveOffset)
             .shadow(color: isMoving ? .black.opacity(0.3) : .clear, radius: 4, y: 2)
             .zIndex(isMoving || isResizing ? 10 : 0)
         }
