@@ -1,105 +1,68 @@
-import { Check, Download, ExternalLink } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { SITE, PRICING } from "@/lib/constants"
 
 export function Pricing() {
   return (
-    <section className="py-24 md:py-32">
-      <div className="mx-auto max-w-6xl px-6">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold text-white md:text-4xl">
-            Simple pricing. No surprises.
-          </h2>
-          <p className="mt-4 text-lg text-zinc-400 max-w-2xl mx-auto">
-            Start free. Upgrade once if you want more power. That&apos;s it.
-          </p>
+    <section className="py-32 px-6" id="pricing">
+      <div className="max-w-5xl mx-auto text-center mb-16">
+        <h2 className="text-4xl font-bold text-white font-headline mb-4">
+          Simple, honest pricing.
+        </h2>
+        <p className="text-zinc-500">Pay once, own it forever. No subscriptions, ever.</p>
+      </div>
+
+      <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Free */}
+        <div className="bg-[#131315] border border-zinc-800 p-10 rounded-xl flex flex-col">
+          <div className="mb-8">
+            <h3 className="text-white font-bold font-headline text-2xl mb-2">Free</h3>
+            <div className="text-4xl font-bold text-white font-headline">
+              $0<span className="text-lg text-zinc-500 font-normal"> forever</span>
+            </div>
+          </div>
+
+          <ul className="space-y-4 mb-10 flex-grow">
+            {PRICING.free.features.map((feature) => (
+              <li key={feature} className="flex items-center gap-3 text-zinc-400 text-sm">
+                <span className="text-[#00FF88] text-sm">&#10003;</span>
+                {feature}
+              </li>
+            ))}
+          </ul>
+
+          <a href={SITE.downloadUrl} target="_blank" rel="noopener noreferrer">
+            <button className="w-full py-4 border border-zinc-800 rounded-lg font-bold font-headline text-white hover:bg-zinc-900 transition-all">
+              Download Now
+            </button>
+          </a>
         </div>
 
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 max-w-4xl mx-auto">
-          {/* Free Tier */}
-          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-8 flex flex-col">
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-white">
-                {PRICING.free.name}
-              </h3>
-              <div className="mt-3 flex items-baseline gap-1">
-                <span className="text-4xl font-bold text-white">
-                  {PRICING.free.price}
-                </span>
-                <span className="text-zinc-500 text-sm">forever</span>
-              </div>
-              <p className="mt-3 text-sm text-zinc-400">
-                {PRICING.free.description}
-              </p>
-            </div>
-
-            <ul className="flex-1 space-y-3 mb-8">
-              {PRICING.free.features.map((feature) => (
-                <li key={feature} className="flex items-start gap-3 text-sm">
-                  <Check className="size-4 text-zinc-500 mt-0.5 shrink-0" />
-                  <span className="text-zinc-300">{feature}</span>
-                </li>
-              ))}
-            </ul>
-
-            <a href={SITE.downloadUrl} target="_blank" rel="noopener noreferrer">
-              <Button
-                variant="outline"
-                className="w-full border-white/20 text-white hover:bg-white/10 h-11 rounded-xl gap-2"
-              >
-                <Download className="size-4" />
-                Download Free
-              </Button>
-            </a>
+        {/* Pro */}
+        <div className="bg-[#131315] border-2 border-[#00FF88] p-10 rounded-xl flex flex-col relative">
+          <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#00FF88] text-black px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+            Most Popular
           </div>
 
-          {/* Pro Tier */}
-          <div className="relative rounded-xl p-px bg-gradient-to-b from-purple-600/50 to-blue-600/50">
-            <div className="rounded-[11px] bg-[#0c0c0e] p-8 h-full flex flex-col">
-              <div className="mb-6">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-semibold text-white">
-                    {PRICING.pro.name}
-                  </h3>
-                  <span className="inline-flex items-center rounded-full bg-gradient-to-r from-purple-600 to-blue-600 px-2.5 py-0.5 text-[10px] font-medium text-white">
-                    Popular
-                  </span>
-                </div>
-                <div className="mt-3 flex items-baseline gap-1">
-                  <span className="text-4xl font-bold text-white">
-                    {PRICING.pro.price}
-                  </span>
-                  <span className="text-zinc-500 text-sm">one-time</span>
-                </div>
-                <p className="mt-2 text-xs text-purple-400">
-                  {PRICING.pro.priceNote}
-                </p>
-                <p className="mt-2 text-sm text-zinc-400">
-                  {PRICING.pro.description}
-                </p>
-              </div>
-
-              <ul className="flex-1 space-y-3 mb-8">
-                {PRICING.pro.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-3 text-sm">
-                    <Check className="size-4 text-purple-400 mt-0.5 shrink-0" />
-                    <span className="text-zinc-300">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <a
-                href={SITE.lemonsqueezy}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Button className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white border-0 h-11 rounded-xl gap-2">
-                  <ExternalLink className="size-4" />
-                  Get Pro — {PRICING.pro.price}
-                </Button>
-              </a>
+          <div className="mb-8">
+            <h3 className="text-white font-bold font-headline text-2xl mb-2">Pro</h3>
+            <div className="text-4xl font-bold text-white font-headline">
+              {PRICING.pro.price}<span className="text-lg text-zinc-500 font-normal"> one-time</span>
             </div>
           </div>
+
+          <ul className="space-y-4 mb-10 flex-grow">
+            {PRICING.pro.features.map((feature, i) => (
+              <li key={feature} className={`flex items-center gap-3 text-sm ${i === 0 ? "text-white font-medium" : "text-zinc-400"}`}>
+                <span className="text-[#00FF88] text-sm">&#10003;</span>
+                {feature}
+              </li>
+            ))}
+          </ul>
+
+          <a href={SITE.lemonsqueezy} target="_blank" rel="noopener noreferrer">
+            <button className="w-full py-4 bg-[#00FF88] text-black rounded-lg font-bold font-headline text-lg hover:brightness-110 transition-all">
+              Upgrade to Pro
+            </button>
+          </a>
         </div>
       </div>
     </section>

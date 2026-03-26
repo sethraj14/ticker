@@ -1,10 +1,16 @@
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Inter, Space_Grotesk } from "next/font/google"
 import "./globals.css"
 import { SITE } from "@/lib/constants"
 
 const inter = Inter({
   variable: "--font-sans",
+  subsets: ["latin"],
+  display: "swap",
+})
+
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-headline",
   subsets: ["latin"],
   display: "swap",
 })
@@ -47,8 +53,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} dark h-full antialiased`}>
-      <body className="min-h-full bg-[#09090b] text-zinc-100 font-sans">
+    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable} dark h-full antialiased`}>
+      <body className="min-h-full bg-[#09090b] text-zinc-100 font-sans overflow-x-hidden">
         {children}
       </body>
     </html>

@@ -3,8 +3,6 @@ import { Hero } from "@/components/hero"
 import { Problem } from "@/components/problem"
 import { Features } from "@/components/features"
 import { Pricing } from "@/components/pricing"
-import { SocialProof } from "@/components/social-proof"
-import { Demo } from "@/components/demo"
 import { Faq } from "@/components/faq"
 import { Footer } from "@/components/footer"
 
@@ -20,14 +18,18 @@ export default async function Home({ searchParams }: PageProps) {
 
   return (
     <>
+      {/* Animated grid background */}
+      <div className="fixed inset-0 -z-10 opacity-50" style={{
+        backgroundImage: "linear-gradient(to right, #18181b 1px, transparent 1px), linear-gradient(to bottom, #18181b 1px, transparent 1px)",
+        backgroundSize: "40px 40px",
+      }} />
+
       <Navbar />
       <main>
         <Hero isProductHunt={isProductHunt} />
         <Problem />
         <Features />
         <Pricing />
-        <SocialProof />
-        <Demo />
         <Faq />
       </main>
       <Footer />

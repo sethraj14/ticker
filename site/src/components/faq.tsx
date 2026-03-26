@@ -10,26 +10,24 @@ import { FAQ } from "@/lib/constants"
 
 export function Faq() {
   return (
-    <section className="py-24 md:py-32">
-      <div className="mx-auto max-w-3xl px-6">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-white md:text-4xl">
-            Frequently asked questions
-          </h2>
-        </div>
+    <section className="py-32 px-6" id="faq">
+      <div className="mx-auto max-w-3xl">
+        <h2 className="text-3xl font-bold text-white font-headline mb-12 text-center">
+          Frequently Asked Questions
+        </h2>
 
         <Accordion className="space-y-2">
           {FAQ.map((item, index) => (
             <AccordionItem
               key={item.q}
               value={index}
-              className="rounded-lg border border-white/10 bg-white/[0.03] px-4"
+              className="border-b border-zinc-800 px-0"
             >
-              <AccordionTrigger className="text-white hover:no-underline py-4 text-left text-base font-medium">
+              <AccordionTrigger className="text-white font-bold font-headline hover:no-underline py-6 text-left text-base">
                 {item.q}
               </AccordionTrigger>
               <AccordionContent>
-                <p className="text-zinc-400 leading-relaxed pb-2">
+                <p className="text-zinc-400 text-sm leading-relaxed pb-4">
                   {item.a}
                 </p>
               </AccordionContent>
