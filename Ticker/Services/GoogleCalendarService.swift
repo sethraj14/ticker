@@ -13,7 +13,7 @@ final class GoogleCalendarService: ObservableObject {
     private let clientSecret: String = {
         Bundle.main.object(forInfoDictionaryKey: "GoogleClientSecret") as? String ?? ""
     }()
-    private let scopes = "https://www.googleapis.com/auth/calendar.events email"
+    private let scopes = "https://www.googleapis.com/auth/calendar email"
     private let tokenURL = "https://oauth2.googleapis.com/token"
     private let authURL = "https://accounts.google.com/o/oauth2/auth"
     private let calendarBaseURL = "https://www.googleapis.com/calendar/v3"
