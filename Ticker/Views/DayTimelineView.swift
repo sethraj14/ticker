@@ -288,13 +288,12 @@ struct DayTimelineView: View {
                         }
                 }
             }
-            .overlay(alignment: .topLeading) {
-                // Drag handle to move event (Pro + Google only)
+            .overlay(alignment: .leading) {
+                // Left color bar = drag handle to move event (Pro + Google only)
                 if le.event.source == .google && LicenseManager.shared.isPro {
-                    Image(systemName: "line.3.horizontal")
-                        .font(.system(size: 7, weight: .bold))
-                        .foregroundStyle(.white.opacity(isMoving ? 0.6 : 0.15))
-                        .frame(width: 16, height: 12)
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(le.event.calendarColor.opacity(isMoving ? 1.0 : 0.8))
+                        .frame(width: 6, height: displayHeight - (isCompactEvent(displayHeight) ? 4 : 6))
                         .contentShape(Rectangle())
                         .gesture(
                             DragGesture(minimumDistance: 2)
@@ -327,8 +326,6 @@ struct DayTimelineView: View {
                                 NSCursor.pop()
                             }
                         }
-                        .padding(.top, 2)
-                        .padding(.leading, 4)
                 }
             }
             .frame(width: colWidth - 2, height: displayHeight)
@@ -397,6 +394,8 @@ struct DayTimelineView: View {
     }
 
     // MARK: - Helpers
+
+    private func isCompactEvent(_ height: CGFloat) -> Bool { height < 28 }
 
     private func resetDragState() {
         dragStartY = nil
