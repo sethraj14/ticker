@@ -301,14 +301,47 @@ struct CreateEventView: View {
                     .textContentType(.none)
             }
 
-            // Date & Time
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Date & Time")
+            // Date
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Date")
                     .font(.system(size: 11))
                     .foregroundStyle(.white.opacity(0.4))
-                DatePicker("", selection: $startDate, in: Date.now...)
+
+                // Quick date chips
+                HStack(spacing: 6) {
+                    dateChip("Today", date: Date.now)
+                    dateChip("Tomorrow", date: Calendar.current.date(byAdding: .day, value: 1, to: Date.now) ?? Date.now)
+                    dateChip("Day After", date: Calendar.current.date(byAdding: .day, value: 2, to: Date.now) ?? Date.now)
+                }
+
+                // Fallback full picker (hidden behind "Pick date" button)
+                DatePicker("", selection: $startDate, in: Date.now..., displayedComponents: .date)
                     .datePickerStyle(.compact)
                     .labelsHidden()
+                    .scaleEffect(0.85, anchor: .leading)
+            }
+
+            // Time
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Time")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.white.opacity(0.4))
+
+                // Quick time chips (common meeting times)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        ForEach([9, 10, 11, 12, 13, 14, 15, 16, 17], id: \.self) { hour in
+                            timeChip(hour: hour, minute: 0)
+                            timeChip(hour: hour, minute: 30)
+                        }
+                    }
+                }
+
+                // Fallback time picker
+                DatePicker("", selection: $startDate, displayedComponents: .hourAndMinute)
+                    .datePickerStyle(.compact)
+                    .labelsHidden()
+                    .scaleEffect(0.85, anchor: .leading)
             }
 
             // Duration
@@ -829,6 +862,76 @@ struct CreateEventView: View {
         let m = mins % 60
         if m == 0 { return "\(h)h" }
         return "\(h).\(m * 10 / 60)h"
+    }
+
+    // MARK: - Date/Time Chips
+
+    private func dateChip(_ label: String, date: Date) -> some View {
+        let cal = Calendar.current
+        let isSelected = cal.isDate(startDate, inSameDayAs: date)
+        return Button {
+            // Preserve the current time, just change the date
+            var components = cal.dateComponents([.hour, .minute], from: startDate)
+            let dayComponents = cal.dateComponents([.year, .month, .day], from: date)
+            components.year = dayComponents.year
+            components.month = dayComponents.month
+            components.day = dayComponents.day
+            if let newDate = cal.date(from: components) {
+                startDate = newDate
+            }
+        } label: {
+            Text(label)
+                .font(.system(size: 11, weight: isSelected ? .semibold : .regular))
+                .foregroundStyle(isSelected ? .white : .white.opacity(0.5))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(isSelected ? .blue.opacity(0.3) : .white.opacity(0.06))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .strokeBorder(isSelected ? .blue.opacity(0.5) : .clear, lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func timeChip(hour: Int, minute: Int) -> some View {
+        let cal = Calendar.current
+        let currentHour = cal.component(.hour, from: startDate)
+        let currentMinute = cal.component(.minute, from: startDate)
+        let isSelected = currentHour == hour && currentMinute == minute
+
+        let label: String = {
+            let h = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour)
+            let period = hour >= 12 ? "PM" : "AM"
+            return minute == 0 ? "\(h) \(period)" : "\(h):\(String(format: "%02d", minute)) \(period)"
+        }()
+
+        return Button {
+            var components = cal.dateComponents([.year, .month, .day], from: startDate)
+            components.hour = hour
+            components.minute = minute
+            if let newDate = cal.date(from: components) {
+                startDate = newDate
+            }
+        } label: {
+            Text(label)
+                .font(.system(size: 10, weight: isSelected ? .semibold : .regular))
+                .foregroundStyle(isSelected ? .white : .white.opacity(0.5))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 5)
+                .background(
+                    RoundedRectangle(cornerRadius: 5)
+                        .fill(isSelected ? .blue.opacity(0.3) : .white.opacity(0.06))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 5)
+                        .strokeBorder(isSelected ? .blue.opacity(0.5) : .clear, lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
     }
 }
 

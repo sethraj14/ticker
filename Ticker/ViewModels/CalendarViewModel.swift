@@ -199,6 +199,7 @@ final class CalendarViewModel: ObservableObject {
             let todayResult = await fetchMergedEvents(for: .now)
             todayEvents = todayResult
             eventCache[todayKey] = todayResult
+            knownAttendees = [] // Reset before rebuilding
             updateAttendeeCache(from: todayResult)
             notificationService.scheduleNotifications(for: todayResult)
 
@@ -266,10 +267,10 @@ final class CalendarViewModel: ObservableObject {
     }
 
     private func updateAttendeeCache(from events: [CalendarEvent]) {
-        let newAttendees = events.flatMap { $0.attendees }
-        let existing = Set(knownAttendees.map { $0.email })
-        for attendee in newAttendees {
-            if !existing.contains(attendee.email) {
+        var seen = Set(knownAttendees.map { $0.email })
+        for attendee in events.flatMap({ $0.attendees }) {
+            if !seen.contains(attendee.email) {
+                seen.insert(attendee.email)
                 knownAttendees.append(attendee)
             }
         }
