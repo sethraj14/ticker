@@ -12,7 +12,6 @@ struct JoinSection: View {
     @State private var isDeleting = false
     @State private var deleteError: String?
     @State private var showAttendees = false
-    @State private var rsvpInProgress = false
 
     var body: some View {
         if isToday {
@@ -252,10 +251,8 @@ struct JoinSection: View {
     private func rsvpButton(_ label: String, status: String, current: String, color: Color, event: CalendarEvent) -> some View {
         let isActive = current == status
         return Button {
-            guard !rsvpInProgress else { return }
-            rsvpInProgress = true
+            guard !isActive else { return } // already this status
             onRSVP?(event, status)
-            // rsvpInProgress is reset when the view re-renders after refreshAll()
         } label: {
             Text(label)
                 .font(.system(size: 10, weight: isActive ? .bold : .medium))
@@ -272,45 +269,44 @@ struct JoinSection: View {
                 )
         }
         .buttonStyle(.plain)
-        .disabled(rsvpInProgress)
         .accessibilityLabel("RSVP \(label)")
     }
 
     // MARK: - Attendee List
 
     private func attendeeList(_ event: CalendarEvent) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ForEach(event.attendees, id: \.email) { attendee in
-                HStack(spacing: 8) {
-                    // Avatar circle
-                    ZStack {
-                        Circle()
-                            .fill(attendeeColor(attendee.email))
-                            .frame(width: 20, height: 20)
-                        Text(String((attendee.name ?? attendee.email).prefix(1)).uppercased())
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundStyle(.white)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(event.attendees, id: \.email) { attendee in
+                    HStack(spacing: 8) {
+                        ZStack {
+                            Circle()
+                                .fill(attendeeColor(attendee.email))
+                                .frame(width: 20, height: 20)
+                            Text(String((attendee.name ?? attendee.email).prefix(1)).uppercased())
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundStyle(.white)
+                        }
+
+                        Text(attendee.name ?? attendee.email)
+                            .font(.system(size: 11))
+                            .foregroundStyle(.white.opacity(0.7))
+                            .lineLimit(1)
+
+                        Spacer()
+
+                        if attendee.responseStatus != nil {
+                            Image(systemName: attendee.rsvpIcon)
+                                .font(.system(size: 10))
+                                .foregroundStyle(attendee.rsvpColor.opacity(0.8))
+                        }
                     }
-
-                    // Name
-                    Text(attendee.name ?? attendee.email)
-                        .font(.system(size: 11))
-                        .foregroundStyle(.white.opacity(0.7))
-                        .lineLimit(1)
-
-                    Spacer()
-
-                    // RSVP status badge
-                    if attendee.responseStatus != nil {
-                        Image(systemName: attendee.rsvpIcon)
-                            .font(.system(size: 10))
-                            .foregroundStyle(attendee.rsvpColor.opacity(0.8))
-                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 4)
                 }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 4)
             }
         }
+        .frame(maxHeight: 120)
         .padding(.vertical, 4)
         .transition(.move(edge: .top).combined(with: .opacity))
     }

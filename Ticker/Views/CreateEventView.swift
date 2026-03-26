@@ -111,10 +111,18 @@ struct CreateEventView: View {
                 startDate = prefilled
                 showManualForm = true
                 timeInput = prefilled.formatted(date: .omitted, time: .shortened)
+                // Calculate duration from dragged end date
+                if let endDate = viewModel.createEventEndDate {
+                    let minutes = Int(endDate.timeIntervalSince(prefilled) / 60)
+                    if minutes > 0 {
+                        selectedDuration = minutes
+                    }
+                }
             } else {
                 timeInput = startDate.formatted(date: .omitted, time: .shortened)
             }
             viewModel.createEventStartDate = nil
+            viewModel.createEventEndDate = nil
             syncDateToTime()
         }
     }
@@ -577,28 +585,30 @@ struct CreateEventView: View {
         let visibleGuests = showCollapse ? Array(guests.prefix(maxVisible)) : guests
 
         return VStack(alignment: .leading, spacing: 6) {
-            FlowLayout(spacing: 6) {
-                ForEach(visibleGuests) { guest in
-                    guestChip(guest)
-                }
-
-                if showCollapse {
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            guestsExpanded = true
-                        }
-                    } label: {
-                        Text("+\(guests.count - maxVisible) more")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(.white.opacity(0.5))
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 5)
-                            .background(RoundedRectangle(cornerRadius: 14).fill(.white.opacity(0.06)))
+            ScrollView {
+                FlowLayout(spacing: 6) {
+                    ForEach(visibleGuests) { guest in
+                        guestChip(guest)
                     }
-                    .buttonStyle(.plain)
+
+                    if showCollapse {
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                guestsExpanded = true
+                            }
+                        } label: {
+                            Text("+\(guests.count - maxVisible) more")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(.white.opacity(0.5))
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 5)
+                                .background(RoundedRectangle(cornerRadius: 14).fill(.white.opacity(0.06)))
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
             }
-            .frame(maxHeight: guestsExpanded && guests.count > 6 ? 120 : .infinity)
+            .frame(maxHeight: guestsExpanded && guests.count > 6 ? 100 : .infinity)
 
             if guestsExpanded && guests.count > maxVisible {
                 Button {

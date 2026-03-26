@@ -121,9 +121,10 @@ struct PopoverView: View {
                         onSelectEvent: { event in
                             viewModel.selectEvent(event)
                         },
-                        onCreateAtTime: { date in
+                        onCreateAtTime: { date, endDate in
                             guard LicenseManager.shared.isPro else { return }
                             viewModel.createEventStartDate = date
+                            viewModel.createEventEndDate = endDate
                             withAnimation(.easeInOut(duration: 0.2)) {
                                 viewModel.showCreateEvent = true
                             }

@@ -49,7 +49,7 @@ struct DayTimelineView: View {
     let isToday: Bool
     let selectedDate: Date
     let onSelectEvent: (CalendarEvent) -> Void
-    var onCreateAtTime: ((Date) -> Void)? = nil
+    var onCreateAtTime: ((Date, Date?) -> Void)? = nil
     var onResizeEvent: ((CalendarEvent, Date) -> Void)? = nil
     var onMoveEvent: ((CalendarEvent, Date, Date) -> Void)? = nil
 
@@ -147,7 +147,7 @@ struct DayTimelineView: View {
                                     let startDate = yToDate(topY)
                                     let endDate = yToDate(bottomY)
                                     if endDate.timeIntervalSince(startDate) >= 900 { // min 15 min
-                                        onCreateAtTime?(startDate)
+                                        onCreateAtTime?(startDate, endDate)
                                     }
                                     resetDragState()
                                 }
@@ -158,7 +158,7 @@ struct DayTimelineView: View {
                             if !isPointOnEvent(y: location.y) {
                                 let snappedY = snapToGrid(location.y)
                                 let date = yToDate(snappedY)
-                                onCreateAtTime?(date)
+                                onCreateAtTime?(date, nil)
                             }
                         }
                         .zIndex(-1)
@@ -169,6 +169,13 @@ struct DayTimelineView: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                     scrollToWorkHours(proxy: proxy)
                 }
+            }
+            .onChange(of: events.map(\.id)) { _ in
+                // Reset all gesture states when events data refreshes (after API calls)
+                resizingEventID = nil
+                resizeCurrentY = nil
+                movingEventID = nil
+                moveCurrentY = nil
             }
         }
     }
@@ -243,7 +250,7 @@ struct DayTimelineView: View {
                 }
 
                 // Resize handle at bottom (Pro + Google only)
-                if le.event.source == .google && LicenseManager.shared.isPro && displayHeight >= 28 {
+                if le.event.source == .google && LicenseManager.shared.isPro && displayHeight >= 16 {
                     Rectangle()
                         .fill(Color.clear)
                         .frame(width: colWidth - 2, height: 8)
@@ -259,6 +266,8 @@ struct DayTimelineView: View {
                                         let newEnd = yToDate(newBottomY)
                                         if newEnd > le.event.startDate {
                                             onResizeEvent?(le.event, newEnd)
+                                            // Keep visual state until events refresh (optimistic UI)
+                                            return
                                         }
                                     }
                                     resizingEventID = nil
@@ -366,6 +375,8 @@ struct DayTimelineView: View {
                     let duration = event.endDate.timeIntervalSince(event.startDate)
                     let newEnd = newStart.addingTimeInterval(duration)
                     onMoveEvent?(event, newStart, newEnd)
+                    // Keep visual state until events refresh (optimistic UI)
+                    return
                 }
                 movingEventID = nil
                 moveCurrentY = nil
