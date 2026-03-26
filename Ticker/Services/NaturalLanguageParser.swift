@@ -24,6 +24,9 @@ enum NaturalLanguageParser {
         // Extract date reference (today, tomorrow, day names like "Friday", "next Monday")
         let dateRef = extractDateReference(from: &remaining)
 
+        // Clean up dangling prepositions/connectors left after extraction
+        remaining = cleanupFillerWords(remaining)
+
         // Whatever's left is the title
         let title = remaining.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty else { return nil }
@@ -176,5 +179,35 @@ enum NaturalLanguageParser {
         }
 
         return nil
+    }
+
+    // MARK: - Cleanup
+
+    /// Remove dangling prepositions and connectors left after extraction.
+    /// e.g., "Test event  for  from " → "Test event"
+    private static func cleanupFillerWords(_ text: String) -> String {
+        var result = text
+        // Remove standalone filler words (at word boundaries)
+        let fillers = ["for", "from", "at", "on", "in", "the", "with", "of", "starting", "lasting"]
+        for filler in fillers {
+            // Remove filler word only when it's standalone (surrounded by spaces or at edges)
+            let pattern = #"\b"# + filler + #"\b"#
+            // Only remove if the word is at the start/end or surrounded by multiple spaces (dangling)
+            while let match = result.range(of: #"(?:^|\s+)"# + pattern + #"(?:\s+|$)"#, options: [.regularExpression, .caseInsensitive]) {
+                let before = result[result.startIndex..<match.lowerBound]
+                let after = result[match.upperBound..<result.endIndex]
+                // Only remove if it's at an edge or leaves the title intact
+                if before.isEmpty || after.isEmpty || before.last == " " || after.first == " " {
+                    result.replaceSubrange(match, with: before.isEmpty ? "" : " ")
+                } else {
+                    break
+                }
+            }
+        }
+        // Collapse multiple spaces
+        while result.contains("  ") {
+            result = result.replacingOccurrences(of: "  ", with: " ")
+        }
+        return result.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
