@@ -55,6 +55,10 @@ struct PopoverView: View {
                 Color.black.opacity(0.3)
             }
         )
+        .onAppear {
+            // Reset to today every time the popover opens
+            viewModel.goToToday()
+        }
     }
 
     private var timedEvents: [CalendarEvent] {
