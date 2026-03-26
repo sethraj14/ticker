@@ -6,6 +6,7 @@ final class CalendarViewModel: ObservableObject {
     @Published var selectedDate: Date = .now
     @Published var displayedEvents: [CalendarEvent] = []
     @Published var showSettings = false
+    @Published var showCreateEvent = false
     @Published var selectedEvent: CalendarEvent? = nil
 
     let googleService = GoogleCalendarService.shared
@@ -185,7 +186,7 @@ final class CalendarViewModel: ObservableObject {
     }
 
     /// Main refresh — fetches today + selected date, updates everything
-    private func refreshAll() {
+    func refreshAll() {
         guard !isSyncing else { return }
         isSyncing = true
         eventCache.removeAll()

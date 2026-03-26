@@ -18,6 +18,7 @@
 		3E2448CDEEDACA8C66E108FB /* ProBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684A2D9D2CEDF349E5BC7818 /* ProBadge.swift */; };
 		3E5A629EF2F0CB4068451D15 /* DayNavigationBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC31741E9FE8E41D7C0E3E1E /* DayNavigationBar.swift */; };
 		456228785B55B3E7D41895FA /* LoopbackHTTPServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBE8044C96EE5B4F6EA0053E /* LoopbackHTTPServer.swift */; };
+		4A849AAEE7BDF89779F13424 /* NaturalLanguageParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EBB1BEA4E27554C9C05DFE1 /* NaturalLanguageParser.swift */; };
 		520ADB1085E5E4572D92442D /* LicenseKeyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A43509F8A2FF68CF240F287F /* LicenseKeyView.swift */; };
 		5A349B391EA6CAF1DA6559C9 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E603713A5DA8B577AE65AE6 /* NotificationService.swift */; };
 		5C22D8386C6763AF71ED4C62 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FA4A82A446E12D061F7E94D /* SettingsView.swift */; };
@@ -32,6 +33,7 @@
 		D4BED4D407BF4866617AC131 /* EventKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 549D81CB59B5AAF8E8CE737D /* EventKitService.swift */; };
 		D62E6292B41884234A4EA145 /* PopoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 832ECE50357A244FF39E4E0B /* PopoverView.swift */; };
 		DCAB07F3B4280618A43B087E /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3F015209DC24736A729ECE7 /* OnboardingView.swift */; };
+		E566A95978FBB95182ADDAF6 /* CreateEventView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FA1191F9B074A302B5D77D1 /* CreateEventView.swift */; };
 		F1C57D068B92EA63AC656524 /* DayTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4ECC75D240239A5A1439736 /* DayTimelineView.swift */; };
 		FB41921DC911831AE0AFCC16 /* MeetingBlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A02BAE2A37E08DC21F01263 /* MeetingBlockView.swift */; };
 		FBE98AC442B9AC51D8357F1A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 673BBEBD03F5A6673840E4C1 /* Assets.xcassets */; };
@@ -40,6 +42,7 @@
 /* Begin PBXFileReference section */
 		084F83A0B5BCEFA905326660 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		0A02BAE2A37E08DC21F01263 /* MeetingBlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingBlockView.swift; sourceTree = "<group>"; };
+		0FA1191F9B074A302B5D77D1 /* CreateEventView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateEventView.swift; sourceTree = "<group>"; };
 		1E0B83F8FA6D81B67311C876 /* GoogleAccount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleAccount.swift; sourceTree = "<group>"; };
 		530EFF981DA0BEAE4EE4E49C /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 		549D81CB59B5AAF8E8CE737D /* EventKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventKitService.swift; sourceTree = "<group>"; };
@@ -55,6 +58,7 @@
 		8A03C86A25EEADE717A231A2 /* EmptyStateViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateViews.swift; sourceTree = "<group>"; };
 		8A868BC2218CB1B4E41B32E9 /* JoinSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JoinSection.swift; sourceTree = "<group>"; };
 		8B6B842FB09D58856957D2B1 /* AccountsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountsSection.swift; sourceTree = "<group>"; };
+		8EBB1BEA4E27554C9C05DFE1 /* NaturalLanguageParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NaturalLanguageParser.swift; sourceTree = "<group>"; };
 		8FFA02FF4CB8587DAD1E3BFD /* CalendarEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarEvent.swift; sourceTree = "<group>"; };
 		95326BC666015BAC7C7508B2 /* Ticker.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Ticker.entitlements; sourceTree = "<group>"; };
 		A43509F8A2FF68CF240F287F /* LicenseKeyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicenseKeyView.swift; sourceTree = "<group>"; };
@@ -88,6 +92,7 @@
 				D5CA2D3D58CF0E9D77413E70 /* GoogleCalendarService.swift */,
 				E040224F8CF6F9B29CA15CA3 /* LicenseManager.swift */,
 				BBE8044C96EE5B4F6EA0053E /* LoopbackHTTPServer.swift */,
+				8EBB1BEA4E27554C9C05DFE1 /* NaturalLanguageParser.swift */,
 				6E603713A5DA8B577AE65AE6 /* NotificationService.swift */,
 			);
 			path = Services;
@@ -131,6 +136,7 @@
 			children = (
 				8B6B842FB09D58856957D2B1 /* AccountsSection.swift */,
 				D08BCD78D46D51A0D23AB20D /* AllDayBanner.swift */,
+				0FA1191F9B074A302B5D77D1 /* CreateEventView.swift */,
 				AC31741E9FE8E41D7C0E3E1E /* DayNavigationBar.swift */,
 				64BB62B1362A62A7113909F8 /* DayStatsBar.swift */,
 				F4ECC75D240239A5A1439736 /* DayTimelineView.swift */,
@@ -239,6 +245,7 @@
 				2A2792C39C515F48C934F4CC /* AllDayBanner.swift in Sources */,
 				03CCB36B8CBF2652E1BE3E3A /* CalendarEvent.swift in Sources */,
 				AE254C786F74A4BD92CB1C63 /* CalendarViewModel.swift in Sources */,
+				E566A95978FBB95182ADDAF6 /* CreateEventView.swift in Sources */,
 				3E5A629EF2F0CB4068451D15 /* DayNavigationBar.swift in Sources */,
 				BE02BF70C0E968C8560DE14C /* DayStatsBar.swift in Sources */,
 				F1C57D068B92EA63AC656524 /* DayTimelineView.swift in Sources */,
@@ -253,6 +260,7 @@
 				456228785B55B3E7D41895FA /* LoopbackHTTPServer.swift in Sources */,
 				FB41921DC911831AE0AFCC16 /* MeetingBlockView.swift in Sources */,
 				7398A7F431AB32ABB5C185AC /* MeetingDonut.swift in Sources */,
+				4A849AAEE7BDF89779F13424 /* NaturalLanguageParser.swift in Sources */,
 				00E1DFF37856F0023AA3376A /* NotificationPanel.swift in Sources */,
 				5A349B391EA6CAF1DA6559C9 /* NotificationService.swift in Sources */,
 				DCAB07F3B4280618A43B087E /* OnboardingView.swift in Sources */,

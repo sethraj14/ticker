@@ -13,7 +13,7 @@ final class GoogleCalendarService: ObservableObject {
     private let clientSecret: String = {
         Bundle.main.object(forInfoDictionaryKey: "GoogleClientSecret") as? String ?? ""
     }()
-    private let scopes = "https://www.googleapis.com/auth/calendar.readonly email"
+    private let scopes = "https://www.googleapis.com/auth/calendar.events email"
     private let tokenURL = "https://oauth2.googleapis.com/token"
     private let authURL = "https://accounts.google.com/o/oauth2/auth"
     private let calendarBaseURL = "https://www.googleapis.com/calendar/v3"
@@ -164,6 +164,51 @@ final class GoogleCalendarService: ObservableObject {
             return try JSONDecoder().decode(TokenResponse.self, from: data)
         } catch {
             return nil
+        }
+    }
+
+    // MARK: - Create Event
+
+    /// Create a new event on the user's primary Google Calendar.
+    /// Uses the first connected account unless accountId is specified.
+    func createEvent(
+        title: String,
+        startDate: Date,
+        endDate: Date,
+        description: String? = nil,
+        accountId: String? = nil
+    ) async -> Bool {
+        let account = accountId.flatMap({ id in accounts.first { $0.id == id } }) ?? accounts.first
+        guard let account else { return false }
+        guard let token = await getValidAccessToken(for: account) else { return false }
+
+        let url = URL(string: "\(calendarBaseURL)/calendars/primary/events")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+
+        var body: [String: Any] = [
+            "summary": title,
+            "start": ["dateTime": formatter.string(from: startDate), "timeZone": TimeZone.current.identifier],
+            "end": ["dateTime": formatter.string(from: endDate), "timeZone": TimeZone.current.identifier]
+        ]
+        if let description { body["description"] = description }
+
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: body) else { return false }
+        request.httpBody = jsonData
+
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+            if let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) {
+                return true
+            }
+            return false
+        } catch {
+            return false
         }
     }
 

@@ -40,6 +40,8 @@ struct PopoverView: View {
         Group {
             if !hasCompletedOnboarding {
                 OnboardingView(viewModel: viewModel, hasCompletedOnboarding: $hasCompletedOnboarding)
+            } else if viewModel.showCreateEvent {
+                CreateEventView(viewModel: viewModel)
             } else if viewModel.showSettings {
                 SettingsView(viewModel: viewModel)
             } else if viewModel.isAuthenticated {
@@ -272,6 +274,27 @@ struct PopoverView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .accessibilityLabel("Settings")
+
+            Button {
+                if LicenseManager.shared.isPro {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        viewModel.showCreateEvent = true
+                    }
+                } else {
+                    if let url = URL(string: LicenseManager.checkoutURL) {
+                        NSWorkspace.shared.open(url)
+                    }
+                }
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.white.opacity(0.4))
+                    .frame(width: 32, height: 32)
+                    .background(.white.opacity(0.06))
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(LicenseManager.shared.isPro ? "Create event" : "Upgrade to Pro to create events")
 
             Spacer()
 
