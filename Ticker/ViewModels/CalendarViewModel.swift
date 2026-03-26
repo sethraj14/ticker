@@ -7,7 +7,9 @@ final class CalendarViewModel: ObservableObject {
     @Published var displayedEvents: [CalendarEvent] = []
     @Published var showSettings = false
     @Published var showCreateEvent = false
+    @Published var showEditEvent: CalendarEvent? = nil
     @Published var selectedEvent: CalendarEvent? = nil
+    @Published var knownAttendees: [EventAttendee] = []
 
     let googleService = GoogleCalendarService.shared
     let notificationService = NotificationService.shared
@@ -197,6 +199,7 @@ final class CalendarViewModel: ObservableObject {
             let todayResult = await fetchMergedEvents(for: .now)
             todayEvents = todayResult
             eventCache[todayKey] = todayResult
+            updateAttendeeCache(from: todayResult)
             notificationService.scheduleNotifications(for: todayResult)
 
             // If viewing today, update display
@@ -260,6 +263,16 @@ final class CalendarViewModel: ObservableObject {
         allEvents.append(contentsOf: await googleEvents)
         allEvents.append(contentsOf: appleEvents)
         return deduplicateEvents(allEvents)
+    }
+
+    private func updateAttendeeCache(from events: [CalendarEvent]) {
+        let newAttendees = events.flatMap { $0.attendees }
+        let existing = Set(knownAttendees.map { $0.email })
+        for attendee in newAttendees {
+            if !existing.contains(attendee.email) {
+                knownAttendees.append(attendee)
+            }
+        }
     }
 
     private func deduplicateEvents(_ events: [CalendarEvent]) -> [CalendarEvent] {

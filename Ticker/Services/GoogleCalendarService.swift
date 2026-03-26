@@ -181,6 +181,7 @@ final class GoogleCalendarService: ObservableObject {
         title: String,
         startDate: Date,
         endDate: Date,
+        attendees: [EventAttendee] = [],
         description: String? = nil,
         accountId: String? = nil
     ) async -> CreateResult {
@@ -204,6 +205,9 @@ final class GoogleCalendarService: ObservableObject {
             "start": ["dateTime": formatter.string(from: startDate), "timeZone": TimeZone.current.identifier],
             "end": ["dateTime": formatter.string(from: endDate), "timeZone": TimeZone.current.identifier]
         ]
+        if !attendees.isEmpty {
+            body["attendees"] = attendees.map { ["email": $0.email] }
+        }
         if let description { body["description"] = description }
 
         guard let jsonData = try? JSONSerialization.data(withJSONObject: body) else {
@@ -224,6 +228,91 @@ final class GoogleCalendarService: ObservableObject {
                 return .error("Google API error (\(http.statusCode)): \(errorBody.prefix(100))")
             }
             return .error("No response from Google.")
+        } catch {
+            return .error("Network error: \(error.localizedDescription)")
+        }
+    }
+
+    // MARK: - Delete Event
+
+    func deleteEvent(eventId: String, accountId: String? = nil) async -> CreateResult {
+        let account = accountId.flatMap({ id in accounts.first { $0.id == id } }) ?? accounts.first
+        guard let account else { return .error("No Google account connected.") }
+        guard let token = await getValidAccessToken(for: account) else {
+            return .error("Could not refresh token. Try removing and re-adding your account.")
+        }
+
+        let url = URL(string: "\(calendarBaseURL)/calendars/primary/events/\(eventId)")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            if let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) || http.statusCode == 204 {
+                return .success
+            }
+            if let http = response as? HTTPURLResponse, http.statusCode == 403 {
+                return .error("Permission denied. Remove and re-add your account.")
+            }
+            let errorBody = String(data: data, encoding: .utf8) ?? "Unknown error"
+            return .error("Google API error: \(errorBody.prefix(100))")
+        } catch {
+            return .error("Network error: \(error.localizedDescription)")
+        }
+    }
+
+    // MARK: - Edit Event
+
+    func editEvent(
+        eventId: String,
+        title: String,
+        startDate: Date,
+        endDate: Date,
+        attendees: [EventAttendee] = [],
+        description: String? = nil,
+        accountId: String? = nil
+    ) async -> CreateResult {
+        let account = accountId.flatMap({ id in accounts.first { $0.id == id } }) ?? accounts.first
+        guard let account else { return .error("No Google account connected.") }
+        guard let token = await getValidAccessToken(for: account) else {
+            return .error("Could not refresh token. Try removing and re-adding your account.")
+        }
+
+        let url = URL(string: "\(calendarBaseURL)/calendars/primary/events/\(eventId)")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "PATCH"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+
+        var body: [String: Any] = [
+            "summary": title,
+            "start": ["dateTime": formatter.string(from: startDate), "timeZone": TimeZone.current.identifier],
+            "end": ["dateTime": formatter.string(from: endDate), "timeZone": TimeZone.current.identifier]
+        ]
+        if !attendees.isEmpty {
+            body["attendees"] = attendees.map { ["email": $0.email] }
+        }
+        if let description { body["description"] = description }
+
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: body) else {
+            return .error("Failed to build request.")
+        }
+        request.httpBody = jsonData
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            if let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) {
+                return .success
+            }
+            if let http = response as? HTTPURLResponse, http.statusCode == 403 {
+                return .error("Permission denied. Remove and re-add your account.")
+            }
+            let errorBody = String(data: data, encoding: .utf8) ?? "Unknown error"
+            return .error("Google API error: \(errorBody.prefix(100))")
         } catch {
             return .error("Network error: \(error.localizedDescription)")
         }
@@ -373,7 +462,7 @@ final class GoogleCalendarService: ObservableObject {
         let isAllDay = item.start.dateTime == nil && item.start.date != nil
 
         let meetingURL = extractMeetingURL(from: item)
-        let attendees = item.attendees?.compactMap { $0.displayName ?? $0.email } ?? []
+        let attendees = item.attendees?.map { EventAttendee(email: $0.email, name: $0.displayName) } ?? []
 
         return CalendarEvent(
             id: item.id,

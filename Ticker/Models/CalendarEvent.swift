@@ -5,6 +5,12 @@ enum CalendarSource {
     case apple
 }
 
+struct EventAttendee: Identifiable, Hashable {
+    var id: String { email }
+    let email: String
+    let name: String?
+}
+
 struct CalendarEvent: Identifiable {
     let id: String
     let title: String
@@ -13,7 +19,7 @@ struct CalendarEvent: Identifiable {
     let meetingURL: URL?
     let source: CalendarSource
     let calendarColor: Color
-    let attendees: [String]
+    let attendees: [EventAttendee]
     let location: String?
     let notes: String?
     let isAllDay: Bool
@@ -26,7 +32,7 @@ struct CalendarEvent: Identifiable {
         meetingURL: URL?,
         source: CalendarSource,
         calendarColor: Color,
-        attendees: [String],
+        attendees: [EventAttendee],
         location: String?,
         notes: String?,
         isAllDay: Bool = false

@@ -40,6 +40,8 @@ struct PopoverView: View {
         Group {
             if !hasCompletedOnboarding {
                 OnboardingView(viewModel: viewModel, hasCompletedOnboarding: $hasCompletedOnboarding)
+            } else if let editEvent = viewModel.showEditEvent {
+                CreateEventView(viewModel: viewModel, editingEvent: editEvent)
             } else if viewModel.showCreateEvent {
                 CreateEventView(viewModel: viewModel)
             } else if viewModel.showSettings {
@@ -128,7 +130,26 @@ struct PopoverView: View {
             JoinSection(
                 event: viewModel.joinSectionEvent,
                 isToday: Calendar.current.isDateInToday(viewModel.selectedDate),
-                allTimedEvents: timedEvents
+                allTimedEvents: timedEvents,
+                onEdit: { event in
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        viewModel.showEditEvent = event
+                    }
+                },
+                onDelete: { event in
+                    Task {
+                        let result = await viewModel.googleService.deleteEvent(eventId: event.id)
+                        await MainActor.run {
+                            switch result {
+                            case .success:
+                                viewModel.selectedEvent = nil
+                                viewModel.refreshAll()
+                            case .error:
+                                break
+                            }
+                        }
+                    }
+                }
             )
 
             Rectangle()

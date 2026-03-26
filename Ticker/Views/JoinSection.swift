@@ -4,6 +4,12 @@ struct JoinSection: View {
     let event: CalendarEvent?
     var isToday: Bool = true
     var allTimedEvents: [CalendarEvent] = []
+    var onEdit: ((CalendarEvent) -> Void)? = nil
+    var onDelete: ((CalendarEvent) -> Void)? = nil
+
+    @State private var showDeleteConfirm = false
+    @State private var isDeleting = false
+    @State private var deleteError: String?
 
     var body: some View {
         if isToday {
@@ -18,56 +24,80 @@ struct JoinSection: View {
     private var todayView: some View {
         Group {
             if let event {
-                HStack(spacing: 12) {
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(event.calendarColor)
-                        .frame(width: 3, height: 40)
+                VStack(spacing: 0) {
+                    HStack(spacing: 12) {
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(event.calendarColor)
+                            .frame(width: 3, height: 40)
 
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("UP NEXT")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundStyle(.white.opacity(0.3))
-                            .tracking(1.2)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("UP NEXT")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundStyle(.white.opacity(0.3))
+                                .tracking(1.2)
 
-                        Text(event.title)
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .lineLimit(1)
+                            Text(event.title)
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .lineLimit(1)
 
-                        Text(event.timeRangeLabel)
-                            .font(.system(size: 11))
-                            .foregroundStyle(.white.opacity(0.4))
+                            Text(event.timeRangeLabel)
+                                .font(.system(size: 11))
+                                .foregroundStyle(.white.opacity(0.4))
+                        }
+
+                        Spacer(minLength: 8)
+
+                        if LicenseManager.shared.isPro && event.source == .google {
+                            eventActionButtons(event)
+                        }
+
+                        if let url = event.meetingURL {
+                            Button {
+                                NSWorkspace.shared.open(url)
+                            } label: {
+                                HStack(spacing: 5) {
+                                    Image(systemName: "video.fill")
+                                        .font(.system(size: 10))
+                                    Text("Join")
+                                        .font(.system(size: 12, weight: .semibold))
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(
+                                    LinearGradient(
+                                        colors: [event.calendarColor, event.calendarColor.opacity(0.8)],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .foregroundStyle(.white)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Join meeting")
+                        }
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+
+                    if showDeleteConfirm {
+                        deleteConfirmationBar(event)
                     }
 
-                    Spacer(minLength: 8)
-
-                    if let url = event.meetingURL {
-                        Button {
-                            NSWorkspace.shared.open(url)
-                        } label: {
-                            HStack(spacing: 5) {
-                                Image(systemName: "video.fill")
-                                    .font(.system(size: 10))
-                                Text("Join")
-                                    .font(.system(size: 12, weight: .semibold))
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(
-                                LinearGradient(
-                                    colors: [event.calendarColor, event.calendarColor.opacity(0.8)],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .foregroundStyle(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    if let error = deleteError {
+                        HStack(spacing: 6) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.system(size: 10))
+                            Text(error)
+                                .font(.system(size: 10))
+                                .lineLimit(1)
                         }
-                        .buttonStyle(.plain)
+                        .foregroundStyle(.orange)
+                        .padding(.horizontal, 14)
+                        .padding(.bottom, 8)
                     }
                 }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 12)
             } else {
                 HStack(spacing: 8) {
                     Image(systemName: "checkmark.circle")
@@ -81,6 +111,97 @@ struct JoinSection: View {
                 .padding(.vertical, 14)
             }
         }
+    }
+
+    // MARK: - Event Action Buttons (Edit + Delete)
+
+    private func eventActionButtons(_ event: CalendarEvent) -> some View {
+        HStack(spacing: 6) {
+            Button {
+                onEdit?(event)
+            } label: {
+                Image(systemName: "pencil")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.4))
+                    .frame(width: 22, height: 22)
+                    .background(.white.opacity(0.06))
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Edit event")
+
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    showDeleteConfirm = true
+                    deleteError = nil
+                }
+            } label: {
+                Image(systemName: "trash")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.4))
+                    .frame(width: 22, height: 22)
+                    .background(.white.opacity(0.06))
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Delete event")
+        }
+    }
+
+    // MARK: - Delete Confirmation
+
+    private func deleteConfirmationBar(_ event: CalendarEvent) -> some View {
+        HStack(spacing: 8) {
+            Text("Delete this event?")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(.white.opacity(0.7))
+
+            Spacer()
+
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    showDeleteConfirm = false
+                }
+            } label: {
+                Text("Cancel")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.5))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(.white.opacity(0.06))
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Cancel delete")
+
+            Button {
+                onDelete?(event)
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    showDeleteConfirm = false
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    if isDeleting {
+                        ProgressView()
+                            .controlSize(.small)
+                            .scaleEffect(0.7)
+                    }
+                    Text("Delete")
+                        .font(.system(size: 11, weight: .semibold))
+                }
+                .foregroundStyle(.white)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(.red.opacity(0.6))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+            }
+            .buttonStyle(.plain)
+            .disabled(isDeleting)
+            .accessibilityLabel("Confirm delete event")
+        }
+        .padding(.horizontal, 14)
+        .padding(.bottom, 10)
+        .transition(.move(edge: .top).combined(with: .opacity))
     }
 
     // MARK: - Non-today: show day summary (event count + total meeting time)

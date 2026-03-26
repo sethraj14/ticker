@@ -90,7 +90,11 @@ final class EventKitService: ObservableObject {
             guard ekEvent.status != .canceled else { return nil }
 
             let meetingURL = extractMeetingURL(from: ekEvent)
-            let attendees = ekEvent.attendees?.compactMap { $0.name } ?? []
+            let attendees: [EventAttendee] = ekEvent.attendees?.compactMap { participant in
+                let email = participant.url.absoluteString.replacingOccurrences(of: "mailto:", with: "")
+                guard !email.isEmpty else { return nil }
+                return EventAttendee(email: email, name: participant.name)
+            } ?? []
             let color = Color(cgColor: ekEvent.calendar.cgColor)
 
             return CalendarEvent(

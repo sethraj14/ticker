@@ -75,7 +75,10 @@ final class NotificationWindowController: NSObject, ObservableObject {
             meetingURL: URL(string: "https://meet.google.com/test"),
             source: .google,
             calendarColor: .blue,
-            attendees: ["John", "Alice"],
+            attendees: [
+                EventAttendee(email: "john@example.com", name: "John"),
+                EventAttendee(email: "alice@example.com", name: "Alice")
+            ],
             location: nil,
             notes: nil
         )
