@@ -130,6 +130,7 @@ struct DayTimelineView: View {
                 onSelectEvent(le.event)
             }
             .frame(width: colWidth - 2, height: height)
+            .clipped()
             .timelinePosition(x: leftX, y: topY)
         }
     }
