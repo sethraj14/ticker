@@ -367,7 +367,7 @@ struct CreateEventView: View {
                     .textFieldStyle(.roundedBorder)
                     .font(.system(size: 12))
                     .disableAutocorrection(true)
-                    .textContentType(.emailAddress)
+                    .textContentType(.none)
                     .onSubmit {
                         addGuestFromInput()
                     }
