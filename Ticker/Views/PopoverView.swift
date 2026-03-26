@@ -78,6 +78,11 @@ struct PopoverView: View {
                 isPro: LicenseManager.shared.isPro
             )
 
+            // Day stats bar
+            if !timedEvents.isEmpty {
+                DayStatsBar(events: timedEvents)
+            }
+
             // Subtle divider
             Rectangle()
                 .fill(.white.opacity(0.08))
