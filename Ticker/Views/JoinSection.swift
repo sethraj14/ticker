@@ -2,6 +2,7 @@ import SwiftUI
 
 struct JoinSection: View {
     let event: CalendarEvent?
+    var isToday: Bool = true
 
     var body: some View {
         if let event {
@@ -12,7 +13,7 @@ struct JoinSection: View {
                     .frame(width: 3, height: 40)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("UP NEXT")
+                    Text(isToday ? "UP NEXT" : "FIRST EVENT")
                         .font(.system(size: 9, weight: .bold))
                         .foregroundStyle(.white.opacity(0.3))
                         .tracking(1.2)
@@ -61,7 +62,7 @@ struct JoinSection: View {
                 Image(systemName: "checkmark.circle")
                     .font(.system(size: 14))
                     .foregroundStyle(.green.opacity(0.5))
-                Text("No upcoming meetings today")
+                Text(isToday ? "No upcoming meetings today" : "No events this day")
                     .font(.system(size: 12))
                     .foregroundStyle(.white.opacity(0.3))
             }

@@ -107,7 +107,11 @@ final class CalendarViewModel: ObservableObject {
         if Calendar.current.isDateInToday(selectedDate) {
             return nextUpcomingEvent
         }
-        return nil
+        // For non-today dates, show the first timed event of that day
+        let timedEvents = displayedEvents
+            .filter { !$0.isAllDay }
+            .sorted { $0.startDate < $1.startDate }
+        return timedEvents.first
     }
 
     func selectEvent(_ event: CalendarEvent) {

@@ -46,6 +46,7 @@ private extension View {
 struct DayTimelineView: View {
     let events: [CalendarEvent]
     let selectedEventID: String?
+    let isToday: Bool
     let onSelectEvent: (CalendarEvent) -> Void
 
     private let hourHeight: CGFloat = 40
@@ -66,7 +67,9 @@ struct DayTimelineView: View {
                     scrollAnchors
                     gridContent
                     eventContent
-                    nowLineContent
+                    if isToday {
+                        nowLineContent
+                    }
                 }
             }
             .frame(maxHeight: .infinity)

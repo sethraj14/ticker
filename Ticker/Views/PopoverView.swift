@@ -100,6 +100,7 @@ struct PopoverView: View {
                     DayTimelineView(
                         events: timedEvents,
                         selectedEventID: viewModel.selectedEvent?.id,
+                        isToday: Calendar.current.isDateInToday(viewModel.selectedDate),
                         onSelectEvent: { event in
                             viewModel.selectEvent(event)
                         }
@@ -113,7 +114,10 @@ struct PopoverView: View {
                 .fill(.white.opacity(0.08))
                 .frame(height: 1)
 
-            JoinSection(event: viewModel.joinSectionEvent)
+            JoinSection(
+                event: viewModel.joinSectionEvent,
+                isToday: Calendar.current.isDateInToday(viewModel.selectedDate)
+            )
 
             Rectangle()
                 .fill(.white.opacity(0.08))
