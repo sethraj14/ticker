@@ -22,6 +22,7 @@
 		5A349B391EA6CAF1DA6559C9 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E603713A5DA8B577AE65AE6 /* NotificationService.swift */; };
 		5C22D8386C6763AF71ED4C62 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FA4A82A446E12D061F7E94D /* SettingsView.swift */; };
 		65B38BF15948B70812B7D781 /* LicenseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E040224F8CF6F9B29CA15CA3 /* LicenseManager.swift */; };
+		7398A7F431AB32ABB5C185AC /* MeetingDonut.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD81489B79503679303D5832 /* MeetingDonut.swift */; };
 		7E281676D082F6EE4E0EDB12 /* EmptyStateViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A03C86A25EEADE717A231A2 /* EmptyStateViews.swift */; };
 		83B805E849B86331CE6FF454 /* UpgradePrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B42865DA27C79A07D25082A /* UpgradePrompt.swift */; };
 		85F87D589E0A2728F73DE5D6 /* TickerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBFE41958B54F61E2D955534 /* TickerApp.swift */; };
@@ -61,6 +62,7 @@
 		B0E611805278CBE58357A2A7 /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelper.swift; sourceTree = "<group>"; };
 		B661760D718C374170E35086 /* CalendarViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarViewModel.swift; sourceTree = "<group>"; };
 		BBE8044C96EE5B4F6EA0053E /* LoopbackHTTPServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopbackHTTPServer.swift; sourceTree = "<group>"; };
+		BD81489B79503679303D5832 /* MeetingDonut.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingDonut.swift; sourceTree = "<group>"; };
 		D08BCD78D46D51A0D23AB20D /* AllDayBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllDayBanner.swift; sourceTree = "<group>"; };
 		D3F015209DC24736A729ECE7 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		D5CA2D3D58CF0E9D77413E70 /* GoogleCalendarService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleCalendarService.swift; sourceTree = "<group>"; };
@@ -136,6 +138,7 @@
 				8A868BC2218CB1B4E41B32E9 /* JoinSection.swift */,
 				A43509F8A2FF68CF240F287F /* LicenseKeyView.swift */,
 				0A02BAE2A37E08DC21F01263 /* MeetingBlockView.swift */,
+				BD81489B79503679303D5832 /* MeetingDonut.swift */,
 				5BF1C63409EA12855B8FF362 /* NotificationPanel.swift */,
 				D3F015209DC24736A729ECE7 /* OnboardingView.swift */,
 				832ECE50357A244FF39E4E0B /* PopoverView.swift */,
@@ -249,6 +252,7 @@
 				65B38BF15948B70812B7D781 /* LicenseManager.swift in Sources */,
 				456228785B55B3E7D41895FA /* LoopbackHTTPServer.swift in Sources */,
 				FB41921DC911831AE0AFCC16 /* MeetingBlockView.swift in Sources */,
+				7398A7F431AB32ABB5C185AC /* MeetingDonut.swift in Sources */,
 				00E1DFF37856F0023AA3376A /* NotificationPanel.swift in Sources */,
 				5A349B391EA6CAF1DA6559C9 /* NotificationService.swift in Sources */,
 				DCAB07F3B4280618A43B087E /* OnboardingView.swift in Sources */,
