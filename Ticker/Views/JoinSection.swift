@@ -61,7 +61,7 @@ struct JoinSection: View {
                 Image(systemName: "checkmark.circle")
                     .font(.system(size: 14))
                     .foregroundStyle(.green.opacity(0.5))
-                Text("No upcoming meetings")
+                Text("No upcoming meetings today")
                     .font(.system(size: 12))
                     .foregroundStyle(.white.opacity(0.3))
             }

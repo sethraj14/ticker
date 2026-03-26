@@ -80,7 +80,11 @@ final class CalendarViewModel: ObservableObject {
     /// show it instead of an ongoing meeting (it's more actionable).
     var nextUpcomingEvent: CalendarEvent? {
         let now = Date.now
-        let activeEvents = todayEvents
+        // Use todayEvents if available, fallback to displayedEvents when viewing today
+        let source = todayEvents.isEmpty && Calendar.current.isDateInToday(selectedDate)
+            ? displayedEvents
+            : todayEvents
+        let activeEvents = source
             .filter { $0.endDate > now && !$0.isAllDay }
             .sorted { $0.startDate < $1.startDate }
 
