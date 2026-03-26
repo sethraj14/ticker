@@ -60,8 +60,11 @@ struct PopoverView: View {
             }
         )
         .onAppear {
-            // Reset to today every time the popover opens
+            // Reset state every time the popover opens
             viewModel.goToToday()
+            viewModel.showCreateEvent = false
+            viewModel.showEditEvent = nil
+            viewModel.showSettings = false
         }
     }
 

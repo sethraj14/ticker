@@ -334,38 +334,28 @@ struct CreateEventView: View {
                     .foregroundStyle(.white.opacity(0.25))
             }
 
-            // Time — text input (type "3pm", "3:30 PM", "15:00")
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Time")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.white.opacity(0.4))
-
-                HStack(spacing: 8) {
-                    TextField("e.g. 3pm, 3:30 PM", text: $timeInput)
+            // Time + Duration — single row
+            HStack(spacing: 10) {
+                // Time input
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Time")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.white.opacity(0.35))
+                    TextField("3:30 PM", text: $timeInput)
                         .textFieldStyle(.roundedBorder)
                         .font(.system(size: 13))
                         .disableAutocorrection(true)
                         .textContentType(.none)
                         .onChange(of: timeInput) { _ in parseTimeInput() }
                         .onSubmit { parseTimeInput() }
-
-                    // Show parsed time feedback
-                    if !timeInput.isEmpty {
-                        Text(startDate.formatted(date: .omitted, time: .shortened))
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(.green.opacity(0.7))
-                    }
                 }
-            }
 
-            // Duration — dropdown + custom
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Duration")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.white.opacity(0.4))
+                // Duration dropdown
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Duration")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.white.opacity(0.35))
 
-                HStack(spacing: 8) {
-                    // Main duration selector as a styled menu button
                     Menu {
                         ForEach([15, 30, 45, 60, 90, 120, 180, 240], id: \.self) { mins in
                             Button(durationLabel(mins)) {
@@ -374,45 +364,39 @@ struct CreateEventView: View {
                             }
                         }
                         Divider()
-                        Button("Custom...") {
-                            showCustomDuration = true
-                        }
+                        Button("Custom...") { showCustomDuration = true }
                     } label: {
-                        HStack(spacing: 6) {
-                            Text(showCustomDuration ? "\(selectedDuration)m" : durationLabel(selectedDuration))
+                        HStack(spacing: 4) {
+                            Text(durationLabel(selectedDuration))
                                 .font(.system(size: 13, weight: .medium))
                                 .foregroundStyle(.white)
-                            Image(systemName: "chevron.down")
-                                .font(.system(size: 9, weight: .semibold))
-                                .foregroundStyle(.white.opacity(0.4))
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(.white.opacity(0.08))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .strokeBorder(.white.opacity(0.12), lineWidth: 1)
-                                )
-                        )
-                    }
-
-                    // Custom duration inline input
-                    if showCustomDuration {
-                        HStack(spacing: 4) {
-                            TextField("min", text: $customDurationText)
-                                .textFieldStyle(.roundedBorder)
-                                .font(.system(size: 12))
-                                .frame(width: 50)
-                                .disableAutocorrection(true)
-                                .onSubmit { applyCustomDuration() }
-                            Text("min")
-                                .font(.system(size: 10))
+                            Image(systemName: "chevron.up.chevron.down")
+                                .font(.system(size: 8))
                                 .foregroundStyle(.white.opacity(0.3))
                         }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 7)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(.white.opacity(0.08))
+                                .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(.white.opacity(0.1), lineWidth: 1))
+                        )
                     }
+                }
+            }
 
+            // Custom duration input (only when "Custom..." selected)
+            if showCustomDuration {
+                HStack(spacing: 6) {
+                    TextField("minutes", text: $customDurationText)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.system(size: 12))
+                        .frame(width: 70)
+                        .disableAutocorrection(true)
+                        .onSubmit { applyCustomDuration() }
+                    Text("min")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.white.opacity(0.3))
                     Spacer()
                 }
             }
