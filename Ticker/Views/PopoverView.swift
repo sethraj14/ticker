@@ -203,6 +203,12 @@ struct PopoverView: View {
                         await MainActor.run {
                             if case .success = result {
                                 viewModel.refreshAll()
+                                // Re-select event from fresh data so JoinSection updates
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                                    if let fresh = viewModel.displayedEvents.first(where: { $0.id == event.id }) {
+                                        viewModel.selectedEvent = fresh
+                                    }
+                                }
                             }
                         }
                     }

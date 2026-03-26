@@ -63,11 +63,6 @@ struct DayTimelineView: View {
     private var eventAreaWidth: CGFloat { viewWidth - lineStart - 8 }
     private var contentHeight: CGFloat { CGFloat(totalHours) * hourHeight }
 
-    // Drag-to-create state
-    @State private var dragStartY: CGFloat? = nil
-    @State private var dragCurrentY: CGFloat? = nil
-    @State private var isDraggingToCreate = false
-
     // Drag-to-resize state
     @State private var resizingEventID: String? = nil
     @State private var resizeCurrentY: CGFloat? = nil
@@ -80,88 +75,17 @@ struct DayTimelineView: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView(.vertical, showsIndicators: true) {
-                ZStack(alignment: .topLeading) {
-                    // SINGLE layout — scroll anchors, grid, events, now-line all in one coordinate space
-                    AbsoluteLayout(width: viewWidth, height: contentHeight) {
-                        scrollAnchors
-                        gridContent
-                        eventContent
-                        if isToday {
-                            nowLineContent
-                        }
-                    }
+                AbsoluteLayout(width: viewWidth, height: contentHeight) {
+                    scrollAnchors
+                    gridContent
 
-                    // Drag-to-create preview block
-                    if let startY = dragStartY, let currentY = dragCurrentY, isDraggingToCreate {
-                        let topY = min(startY, currentY)
-                        let height = max(abs(currentY - startY), hourHeight / 4)
-                        RoundedRectangle(cornerRadius: 6)
-                            .fill(Color.blue.opacity(0.2))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .strokeBorder(Color.blue.opacity(0.5), lineWidth: 1.5)
-                            )
-                            .overlay(
-                                Text(previewTimeLabel(topY: topY, height: height))
-                                    .font(.system(size: 10, weight: .medium))
-                                    .foregroundStyle(.white.opacity(0.7))
-                                    .padding(.leading, 6)
-                                    .padding(.top, 3),
-                                alignment: .topLeading
-                            )
-                            .frame(width: eventAreaWidth - 8, height: height)
-                            .offset(x: lineStart + 4, y: topY)
-                            .allowsHitTesting(false)
-                    }
+                    // Tap targets for empty 15-min slots (BEFORE events so events get priority)
+                    tapTargets
 
-                    // Invisible tap/drag target for empty areas
-                    Color.clear
-                        .frame(width: eventAreaWidth, height: contentHeight)
-                        .offset(x: lineStart)
-                        .contentShape(Rectangle())
-                        .gesture(
-                            DragGesture(minimumDistance: 5)
-                                .onChanged { value in
-                                    guard LicenseManager.shared.isPro else { return }
-                                    // Don't start create drag while resize/move is active
-                                    guard resizingEventID == nil && movingEventID == nil else { return }
-                                    let y = snapToGrid(value.startLocation.y)
-                                    if dragStartY == nil {
-                                        // Check we're not on an event
-                                        if !isPointOnEvent(y: value.startLocation.y) {
-                                            dragStartY = y
-                                            isDraggingToCreate = true
-                                        }
-                                    }
-                                    if isDraggingToCreate {
-                                        dragCurrentY = snapToGrid(value.location.y)
-                                    }
-                                }
-                                .onEnded { value in
-                                    guard isDraggingToCreate, let startY = dragStartY, let endY = dragCurrentY else {
-                                        resetDragState()
-                                        return
-                                    }
-                                    let topY = min(startY, endY)
-                                    let bottomY = max(startY, endY)
-                                    let startDate = yToDate(topY)
-                                    let endDate = yToDate(bottomY)
-                                    if endDate.timeIntervalSince(startDate) >= 900 { // min 15 min
-                                        onCreateAtTime?(startDate, endDate)
-                                    }
-                                    resetDragState()
-                                }
-                        )
-                        .onTapGesture { location in
-                            guard LicenseManager.shared.isPro else { return }
-                            guard resizingEventID == nil && movingEventID == nil else { return }
-                            if !isPointOnEvent(y: location.y) {
-                                let snappedY = snapToGrid(location.y)
-                                let date = yToDate(snappedY)
-                                onCreateAtTime?(date, nil)
-                            }
-                        }
-                        .zIndex(-1)
+                    eventContent
+                    if isToday {
+                        nowLineContent
+                    }
                 }
             }
             .frame(maxHeight: .infinity)
@@ -178,12 +102,6 @@ struct DayTimelineView: View {
                 moveCurrentY = nil
             }
         }
-    }
-
-    private func resetDragState() {
-        dragStartY = nil
-        dragCurrentY = nil
-        isDraggingToCreate = false
     }
 
     // MARK: - Scroll Anchors (invisible, inside the same layout)
@@ -219,6 +137,27 @@ struct DayTimelineView: View {
                 .frame(width: labelWidth, alignment: .trailing)
                 .timelinePosition(x: 0, y: y - 8)
                 .allowsHitTesting(false)
+        }
+    }
+
+    // MARK: - Tap Targets (click-to-create on empty areas)
+
+    @ViewBuilder
+    private var tapTargets: some View {
+        // One tap target per 15-min slot across the timeline
+        ForEach(0..<(totalHours * 4), id: \.self) { slot in
+            let slotY = CGFloat(slot) * (hourHeight / 4)
+            let slotHeight = hourHeight / 4
+
+            Color.clear
+                .frame(width: eventAreaWidth, height: slotHeight)
+                .contentShape(Rectangle())
+                .timelinePosition(x: lineStart, y: slotY)
+                .onTapGesture {
+                    guard LicenseManager.shared.isPro else { return }
+                    let date = yToDate(slotY)
+                    onCreateAtTime?(date, nil)
+                }
         }
     }
 
@@ -285,7 +224,7 @@ struct DayTimelineView: View {
             }
             .frame(width: colWidth - 2, height: displayHeight)
             .timelinePosition(x: leftX, y: displayY)
-            .simultaneousGesture(moveGesture(for: le.event, topY: topY))
+            .highPriorityGesture(moveGesture(for: le.event, topY: topY))
             .shadow(color: isMoving ? .black.opacity(0.3) : .clear, radius: 4, y: 2)
             .zIndex(isMoving || isResizing ? 10 : 0)
         }
@@ -353,8 +292,8 @@ struct DayTimelineView: View {
 
     /// Long-press + drag gesture for moving events
     private func moveGesture(for event: CalendarEvent, topY: CGFloat) -> some Gesture {
-        LongPressGesture(minimumDuration: 0.3)
-            .sequenced(before: DragGesture(minimumDistance: 2))
+        LongPressGesture(minimumDuration: 0.15)
+            .sequenced(before: DragGesture(minimumDistance: 1))
             .onChanged { value in
                 guard event.source == .google && LicenseManager.shared.isPro else { return }
                 switch value {
@@ -363,7 +302,8 @@ struct DayTimelineView: View {
                         if movingEventID == nil {
                             movingEventID = event.id
                         }
-                        moveCurrentY = snapToGrid(topY + drag.translation.height)
+                        // Smooth movement during drag (no snapping)
+                        moveCurrentY = topY + drag.translation.height
                     }
                 default: break
                 }
@@ -371,7 +311,10 @@ struct DayTimelineView: View {
             .onEnded { _ in
                 guard event.source == .google && LicenseManager.shared.isPro else { return }
                 if let newTopY = moveCurrentY {
-                    let newStart = yToDate(newTopY)
+                    // Snap only on release
+                    let snappedY = snapToGrid(newTopY)
+                    moveCurrentY = snappedY
+                    let newStart = yToDate(snappedY)
                     let duration = event.endDate.timeIntervalSince(event.startDate)
                     let newEnd = newStart.addingTimeInterval(duration)
                     onMoveEvent?(event, newStart, newEnd)
@@ -416,15 +359,6 @@ struct DayTimelineView: View {
             }
         }
         return false
-    }
-
-    /// Label for the drag-to-create preview
-    private func previewTimeLabel(topY: CGFloat, height: CGFloat) -> String {
-        let startDate = yToDate(topY)
-        let endDate = yToDate(topY + height)
-        let formatter = DateFormatter()
-        formatter.dateFormat = "h:mm a"
-        return "\(formatter.string(from: startDate)) – \(formatter.string(from: endDate))"
     }
 
     private func hourLabel(_ hour: Int) -> String {
