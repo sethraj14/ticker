@@ -68,13 +68,6 @@ struct DayTimelineView: View {
     @State private var dragCurrentY: CGFloat? = nil
     @State private var isDraggingToCreate = false
 
-    // Drag-to-resize state
-    @State private var resizingEventID: String? = nil
-    @State private var resizeCurrentY: CGFloat? = nil
-
-    // Drag-to-move state
-    @State private var movingEventID: String? = nil
-    @State private var moveCurrentY: CGFloat? = nil
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -121,7 +114,6 @@ struct DayTimelineView: View {
                     DragGesture(minimumDistance: 8)
                         .onChanged { value in
                             guard LicenseManager.shared.isPro else { return }
-                            guard resizingEventID == nil && movingEventID == nil else { return }
                             // Only start if dragging from empty area in event column
                             if !isDraggingToCreate && dragStartY == nil {
                                 let startX = value.startLocation.x
@@ -157,13 +149,6 @@ struct DayTimelineView: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                     scrollToWorkHours(proxy: proxy)
                 }
-            }
-            .onChange(of: events.map(\.id)) { _ in
-                // Reset all gesture states when events data refreshes (after API calls)
-                resizingEventID = nil
-                resizeCurrentY = nil
-                movingEventID = nil
-                moveCurrentY = nil
             }
         }
     }
@@ -239,100 +224,22 @@ struct DayTimelineView: View {
             let colWidth = (eventAreaWidth / CGFloat(le.totalColumns)).rounded(.down)
             let leftX = (lineStart + colWidth * CGFloat(le.column)).rounded(.down)
             let isSelected = selectedEventID == le.event.id
-            let isResizing = resizingEventID == le.event.id
-            let isMoving = movingEventID == le.event.id
 
-            // Visual adjustments via offset (NOT layout position — avoids full relayout)
-            let displayHeight = isResizing
-                ? max((resizeCurrentY ?? bottomY) - topY, 20)
-                : baseHeight
-            let moveOffset = isMoving
-                ? (moveCurrentY ?? topY) - topY
-                : 0.0
-
-            ZStack(alignment: .bottom) {
-                MeetingBlockView(event: le.event, isSelected: isSelected, availableHeight: displayHeight) {
-                    onSelectEvent(le.event)
-                }
-
-                // Resize handle at bottom (Pro + Google only)
-                if le.event.source == .google && LicenseManager.shared.isPro && displayHeight >= 16 {
-                    Rectangle()
-                        .fill(Color.clear)
-                        .frame(width: colWidth - 2, height: 8)
-                        .contentShape(Rectangle())
-                        .gesture(
-                            DragGesture(minimumDistance: 2)
-                                .onChanged { value in
-                                    resizingEventID = le.event.id
-                                    resizeCurrentY = snapToGrid(topY + displayHeight + value.translation.height)
-                                }
-                                .onEnded { _ in
-                                    if let newBottomY = resizeCurrentY {
-                                        let newEnd = yToDate(newBottomY)
-                                        if newEnd > le.event.startDate {
-                                            onResizeEvent?(le.event, newEnd)
-                                            return
-                                        }
-                                    }
-                                    resizingEventID = nil
-                                    resizeCurrentY = nil
-                                }
-                        )
-                        .onHover { hovering in
-                            if hovering {
-                                NSCursor.resizeUpDown.push()
-                            } else {
-                                NSCursor.pop()
-                            }
-                        }
-                }
-            }
-            .overlay(alignment: .leading) {
-                // Left color bar = drag handle to move event (Pro + Google only)
-                if le.event.source == .google && LicenseManager.shared.isPro {
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(le.event.calendarColor.opacity(isMoving ? 1.0 : 0.8))
-                        .frame(width: 6, height: displayHeight - (isCompactEvent(displayHeight) ? 4 : 6))
-                        .contentShape(Rectangle())
-                        .gesture(
-                            DragGesture(minimumDistance: 2)
-                                .onChanged { value in
-                                    if movingEventID == nil {
-                                        movingEventID = le.event.id
-                                        NSCursor.closedHand.push()
-                                    }
-                                    moveCurrentY = topY + value.translation.height
-                                }
-                                .onEnded { _ in
-                                    NSCursor.pop()
-                                    if let newTopY = moveCurrentY {
-                                        let snappedY = snapToGrid(newTopY)
-                                        moveCurrentY = snappedY
-                                        let newStart = yToDate(snappedY)
-                                        let duration = le.event.endDate.timeIntervalSince(le.event.startDate)
-                                        let newEnd = newStart.addingTimeInterval(duration)
-                                        onMoveEvent?(le.event, newStart, newEnd)
-                                        return
-                                    }
-                                    movingEventID = nil
-                                    moveCurrentY = nil
-                                }
-                        )
-                        .onHover { hovering in
-                            if hovering {
-                                NSCursor.openHand.push()
-                            } else {
-                                NSCursor.pop()
-                            }
-                        }
-                }
-            }
-            .frame(width: colWidth - 2, height: displayHeight)
+            DraggableEventBlock(
+                event: le.event,
+                isSelected: isSelected,
+                baseHeight: baseHeight,
+                topY: topY,
+                colWidth: colWidth,
+                isPro: LicenseManager.shared.isPro,
+                onSelect: { onSelectEvent(le.event) },
+                onResize: { newEnd in onResizeEvent?(le.event, newEnd) },
+                onMove: { newStart, newEnd in onMoveEvent?(le.event, newStart, newEnd) },
+                snapToGrid: snapToGrid,
+                yToDate: yToDate
+            )
+            .frame(width: colWidth - 2, height: baseHeight)
             .timelinePosition(x: leftX, y: topY)
-            .offset(y: moveOffset)
-            .shadow(color: isMoving ? .black.opacity(0.3) : .clear, radius: 4, y: 2)
-            .zIndex(isMoving || isResizing ? 10 : 0)
         }
     }
 
@@ -396,8 +303,6 @@ struct DayTimelineView: View {
 
     // MARK: - Helpers
 
-    private func isCompactEvent(_ height: CGFloat) -> Bool { height < 28 }
-
     private func resetDragState() {
         dragStartY = nil
         dragCurrentY = nil
@@ -460,5 +365,118 @@ struct DayTimelineView: View {
         let target = (currentHour >= workDayStart && currentHour <= 18)
             ? max(workDayStart, currentHour - 1) : workDayStart
         proxy.scrollTo(target, anchor: .top)
+    }
+}
+
+// MARK: - Draggable Event Block (isolated state = only this view re-renders during drag)
+
+private struct DraggableEventBlock: View {
+    let event: CalendarEvent
+    let isSelected: Bool
+    let baseHeight: CGFloat
+    let topY: CGFloat
+    let colWidth: CGFloat
+    let isPro: Bool
+    let onSelect: () -> Void
+    let onResize: (Date) -> Void
+    let onMove: (Date, Date) -> Void
+    let snapToGrid: (CGFloat) -> CGFloat
+    let yToDate: (CGFloat) -> Date
+
+    // Each block owns its own gesture state — no parent re-render
+    @GestureState private var dragOffset: CGFloat = 0
+    @GestureState private var resizeDelta: CGFloat = 0
+    @State private var isDragging = false
+    @State private var isResizing = false
+
+    private var isGoogle: Bool { event.source == .google }
+    private var isCompact: Bool { baseHeight < 28 }
+
+    private var displayHeight: CGFloat {
+        isResizing ? max(baseHeight + resizeDelta, 20) : baseHeight
+    }
+
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            MeetingBlockView(event: event, isSelected: isSelected, availableHeight: displayHeight) {
+                onSelect()
+            }
+
+            // Resize handle at bottom
+            if isGoogle && isPro && displayHeight >= 16 {
+                Rectangle()
+                    .fill(Color.clear)
+                    .frame(width: colWidth - 2, height: 8)
+                    .contentShape(Rectangle())
+                    .gesture(resizeGesture)
+                    .onHover { hovering in
+                        if hovering { NSCursor.resizeUpDown.push() }
+                        else { NSCursor.pop() }
+                    }
+            }
+        }
+        .overlay(alignment: .leading) {
+            // Left color bar = drag handle
+            if isGoogle && isPro {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(event.calendarColor.opacity(isDragging ? 1.0 : 0.8))
+                    .frame(width: 6, height: displayHeight - (isCompact ? 4 : 6))
+                    .contentShape(Rectangle())
+                    .gesture(moveGesture)
+                    .onHover { hovering in
+                        if hovering { NSCursor.openHand.push() }
+                        else { NSCursor.pop() }
+                    }
+            }
+        }
+        .frame(width: colWidth - 2, height: displayHeight)
+        .offset(y: dragOffset)
+        .shadow(color: isDragging ? .black.opacity(0.3) : .clear, radius: 4, y: 2)
+        .zIndex(isDragging || isResizing ? 10 : 0)
+    }
+
+    // MARK: - Move Gesture (uses @GestureState for 60fps perf)
+
+    private var moveGesture: some Gesture {
+        DragGesture(minimumDistance: 2)
+            .updating($dragOffset) { value, state, _ in
+                state = value.translation.height
+            }
+            .onChanged { _ in
+                if !isDragging {
+                    isDragging = true
+                    NSCursor.closedHand.push()
+                }
+            }
+            .onEnded { value in
+                NSCursor.pop()
+                isDragging = false
+                let finalY = topY + value.translation.height
+                let snappedY = snapToGrid(finalY)
+                let newStart = yToDate(snappedY)
+                let duration = event.endDate.timeIntervalSince(event.startDate)
+                let newEnd = newStart.addingTimeInterval(duration)
+                onMove(newStart, newEnd)
+            }
+    }
+
+    // MARK: - Resize Gesture
+
+    private var resizeGesture: some Gesture {
+        DragGesture(minimumDistance: 2)
+            .updating($resizeDelta) { value, state, _ in
+                state = value.translation.height
+            }
+            .onChanged { _ in
+                if !isResizing { isResizing = true }
+            }
+            .onEnded { value in
+                isResizing = false
+                let newBottomY = snapToGrid(topY + baseHeight + value.translation.height)
+                let newEnd = yToDate(newBottomY)
+                if newEnd > event.startDate {
+                    onResize(newEnd)
+                }
+            }
     }
 }
