@@ -323,55 +323,54 @@ struct CreateEventView: View {
                     .foregroundStyle(.white.opacity(0.25))
             }
 
-            // Time — Hour grid + Minute + AM/PM
+            // Time — compact dropdown row
             VStack(alignment: .leading, spacing: 6) {
                 Text("Time")
                     .font(.system(size: 11))
                     .foregroundStyle(.white.opacity(0.4))
 
                 HStack(spacing: 8) {
-                    // Hour selector (4x3 grid: 1-12)
-                    VStack(spacing: 3) {
-                        ForEach(0..<4, id: \.self) { row in
-                            HStack(spacing: 3) {
-                                ForEach(1...3, id: \.self) { col in
-                                    let hour = row * 3 + col
-                                    hourButton(hour)
-                                }
-                            }
+                    // Hour dropdown
+                    Picker("", selection: $selectedHour) {
+                        ForEach(1...12, id: \.self) { h in
+                            Text("\(h)").tag(h)
                         }
                     }
+                    .pickerStyle(.menu)
+                    .frame(width: 55)
+                    .labelsHidden()
 
-                    // Separator
-                    Rectangle()
-                        .fill(.white.opacity(0.08))
-                        .frame(width: 1, height: 80)
+                    Text(":")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(.white.opacity(0.4))
 
-                    // Minute + AM/PM
-                    VStack(spacing: 6) {
-                        // Minutes
-                        VStack(spacing: 3) {
-                            HStack(spacing: 3) {
-                                minuteButton(0)
-                                minuteButton(15)
-                            }
-                            HStack(spacing: 3) {
-                                minuteButton(30)
-                                minuteButton(45)
-                            }
+                    // Minute dropdown
+                    Picker("", selection: $selectedMinute) {
+                        ForEach([0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55], id: \.self) { m in
+                            Text(String(format: "%02d", m)).tag(m)
                         }
-
-                        // AM / PM toggle
-                        HStack(spacing: 0) {
-                            amPmButton("AM", isActive: isAM) { isAM = true; syncTimeToDate() }
-                            amPmButton("PM", isActive: !isAM) { isAM = false; syncTimeToDate() }
-                        }
-                        .background(RoundedRectangle(cornerRadius: 5).fill(.white.opacity(0.06)))
                     }
+                    .pickerStyle(.menu)
+                    .frame(width: 55)
+                    .labelsHidden()
+
+                    // AM/PM toggle
+                    Picker("", selection: $isAM) {
+                        Text("AM").tag(true)
+                        Text("PM").tag(false)
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(width: 80)
+                    .labelsHidden()
+
+                    Spacer()
                 }
+                .onChange(of: selectedHour) { _ in syncTimeToDate() }
+                .onChange(of: selectedMinute) { _ in syncTimeToDate() }
+                .onChange(of: isAM) { _ in syncTimeToDate() }
             }
 
-            // Duration — 4 clean options
+            // Duration
             VStack(alignment: .leading, spacing: 6) {
                 Text("Duration")
                     .font(.system(size: 11))
@@ -420,53 +419,6 @@ struct CreateEventView: View {
     }
 
     // MARK: - Reusable button components
-
-    private func hourButton(_ hour: Int) -> some View {
-        let isSelected = selectedHour == hour
-        return Button {
-            selectedHour = hour
-            syncTimeToDate()
-        } label: {
-            Text("\(hour)")
-                .font(.system(size: 11, weight: isSelected ? .bold : .regular, design: .rounded))
-                .foregroundStyle(isSelected ? .white : .white.opacity(0.4))
-                .frame(width: 28, height: 26)
-                .background(
-                    RoundedRectangle(cornerRadius: 5)
-                        .fill(isSelected ? .blue.opacity(0.35) : .clear)
-                )
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func minuteButton(_ minute: Int) -> some View {
-        let isSelected = selectedMinute == minute
-        return Button {
-            selectedMinute = minute
-            syncTimeToDate()
-        } label: {
-            Text(":\(String(format: "%02d", minute))")
-                .font(.system(size: 11, weight: isSelected ? .bold : .regular, design: .monospaced))
-                .foregroundStyle(isSelected ? .white : .white.opacity(0.4))
-                .frame(width: 36, height: 26)
-                .background(
-                    RoundedRectangle(cornerRadius: 5)
-                        .fill(isSelected ? .blue.opacity(0.35) : .clear)
-                )
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func amPmButton(_ label: String, isActive: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(label)
-                .font(.system(size: 10, weight: isActive ? .bold : .medium))
-                .foregroundStyle(isActive ? .white : .white.opacity(0.3))
-                .frame(width: 36, height: 24)
-                .background(isActive ? RoundedRectangle(cornerRadius: 5).fill(.blue.opacity(0.35)) : nil)
-        }
-        .buttonStyle(.plain)
-    }
 
     private func chipButton(_ label: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
