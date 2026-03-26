@@ -43,6 +43,11 @@ struct MeetingBlockView: View {
 
     private var compactContent: some View {
         HStack(spacing: 4) {
+            // RSVP status icon
+            if let status = event.myRSVPStatus, status != "accepted" {
+                rsvpIcon(for: status, size: 8)
+            }
+
             Text(event.title)
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(.white.opacity(0.9))
@@ -80,14 +85,28 @@ struct MeetingBlockView: View {
     private var fullContent: some View {
         HStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(event.title)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.9))
-                    .lineLimit(1)
+                HStack(spacing: 4) {
+                    Text(event.title)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.9))
+                        .lineLimit(1)
 
-                Text(event.startTimeLabel)
-                    .font(.system(size: 9))
-                    .foregroundStyle(.white.opacity(0.4))
+                    if let status = event.myRSVPStatus, status != "accepted" {
+                        rsvpIcon(for: status, size: 10)
+                    }
+                }
+
+                HStack(spacing: 4) {
+                    Text(event.startTimeLabel)
+                        .font(.system(size: 9))
+                        .foregroundStyle(.white.opacity(0.4))
+
+                    if event.attendees.count > 1 {
+                        Text("· \(event.attendees.count) guests")
+                            .font(.system(size: 9))
+                            .foregroundStyle(.white.opacity(0.3))
+                    }
+                }
             }
             .padding(.leading, 6)
             .padding(.vertical, 3)
@@ -109,5 +128,29 @@ struct MeetingBlockView: View {
                 .padding(.trailing, 4)
             }
         }
+    }
+
+    // MARK: - RSVP Icon
+
+    private func rsvpIcon(for status: String, size: CGFloat) -> some View {
+        let icon: String
+        let color: Color
+        switch status {
+        case "declined":
+            icon = "xmark.circle.fill"
+            color = .red
+        case "tentative":
+            icon = "questionmark.circle.fill"
+            color = .yellow
+        case "needsAction":
+            icon = "circle"
+            color = .gray
+        default:
+            icon = "checkmark.circle.fill"
+            color = .green
+        }
+        return Image(systemName: icon)
+            .font(.system(size: size))
+            .foregroundStyle(color.opacity(0.8))
     }
 }

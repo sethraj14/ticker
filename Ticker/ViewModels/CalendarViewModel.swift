@@ -8,6 +8,7 @@ final class CalendarViewModel: ObservableObject {
     @Published var showSettings = false
     @Published var showCreateEvent = false
     @Published var showEditEvent: CalendarEvent? = nil
+    @Published var createEventStartDate: Date? = nil
     @Published var selectedEvent: CalendarEvent? = nil
     @Published var knownAttendees: [EventAttendee] = []
 

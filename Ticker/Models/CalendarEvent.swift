@@ -9,6 +9,32 @@ struct EventAttendee: Identifiable, Hashable {
     var id: String { email }
     let email: String
     let name: String?
+    let responseStatus: String?
+
+    init(email: String, name: String?, responseStatus: String? = nil) {
+        self.email = email
+        self.name = name
+        self.responseStatus = responseStatus
+    }
+
+    /// RSVP display icon
+    var rsvpIcon: String {
+        switch responseStatus {
+        case "accepted": return "checkmark.circle.fill"
+        case "declined": return "xmark.circle.fill"
+        case "tentative": return "questionmark.circle.fill"
+        default: return "circle"
+        }
+    }
+
+    var rsvpColor: Color {
+        switch responseStatus {
+        case "accepted": return .green
+        case "declined": return .red
+        case "tentative": return .yellow
+        default: return .gray
+        }
+    }
 }
 
 struct CalendarEvent: Identifiable {
@@ -23,6 +49,7 @@ struct CalendarEvent: Identifiable {
     let location: String?
     let notes: String?
     let isAllDay: Bool
+    let accountEmail: String?
 
     init(
         id: String,
@@ -35,7 +62,8 @@ struct CalendarEvent: Identifiable {
         attendees: [EventAttendee],
         location: String?,
         notes: String?,
-        isAllDay: Bool = false
+        isAllDay: Bool = false,
+        accountEmail: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -48,6 +76,13 @@ struct CalendarEvent: Identifiable {
         self.location = location
         self.notes = notes
         self.isAllDay = isAllDay
+        self.accountEmail = accountEmail
+    }
+
+    /// Current user's RSVP status for this event
+    var myRSVPStatus: String? {
+        guard let email = accountEmail else { return nil }
+        return attendees.first(where: { $0.email.lowercased() == email.lowercased() })?.responseStatus
     }
 
     var durationMinutes: Int {

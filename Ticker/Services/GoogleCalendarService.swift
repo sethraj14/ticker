@@ -318,6 +318,45 @@ final class GoogleCalendarService: ObservableObject {
         }
     }
 
+    // MARK: - RSVP (Accept/Decline/Maybe)
+
+    func rsvpEvent(eventId: String, status: String, accountId: String? = nil) async -> CreateResult {
+        let account = accountId.flatMap({ id in accounts.first { $0.id == id } }) ?? accounts.first
+        guard let account else { return .error("No Google account connected.") }
+        guard let token = await getValidAccessToken(for: account) else {
+            return .error("Could not refresh token. Try removing and re-adding your account.")
+        }
+
+        let url = URL(string: "\(calendarBaseURL)/calendars/primary/events/\(eventId)")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "PATCH"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let body: [String: Any] = [
+            "attendees": [["email": account.email, "responseStatus": status]]
+        ]
+
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: body) else {
+            return .error("Failed to build request.")
+        }
+        request.httpBody = jsonData
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            if let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) {
+                return .success
+            }
+            if let http = response as? HTTPURLResponse, http.statusCode == 403 {
+                return .error("Permission denied. Remove and re-add your account.")
+            }
+            let errorBody = String(data: data, encoding: .utf8) ?? "Unknown error"
+            return .error("Google API error: \(errorBody.prefix(100))")
+        } catch {
+            return .error("Network error: \(error.localizedDescription)")
+        }
+    }
+
     // MARK: - Fetch Events (all accounts merged)
 
     func fetchEvents(for date: Date) async -> [CalendarEvent] {
@@ -365,7 +404,8 @@ final class GoogleCalendarService: ObservableObject {
                         accessToken: accessToken,
                         timeMin: timeMin,
                         timeMax: timeMax,
-                        timeZone: timeZone
+                        timeZone: timeZone,
+                        accountEmail: account.email
                     )
                 }
             }
@@ -416,7 +456,8 @@ final class GoogleCalendarService: ObservableObject {
         accessToken: String,
         timeMin: String,
         timeMax: String,
-        timeZone: String
+        timeZone: String,
+        accountEmail: String? = nil
     ) async -> [CalendarEvent] {
         let safeChars = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: ".-_~"))
         let encodedId = calendarId.addingPercentEncoding(withAllowedCharacters: safeChars) ?? calendarId
@@ -444,7 +485,7 @@ final class GoogleCalendarService: ObservableObject {
             }
             let eventsResponse = try JSONDecoder().decode(GoogleEventsResponse.self, from: data)
             return (eventsResponse.items ?? []).compactMap { item in
-                parseGoogleEvent(item, calendarColor: calendarColor)
+                parseGoogleEvent(item, calendarColor: calendarColor, accountEmail: accountEmail)
             }
         } catch {
             return []
@@ -453,7 +494,7 @@ final class GoogleCalendarService: ObservableObject {
 
     // MARK: - Parse
 
-    private func parseGoogleEvent(_ item: GoogleEventItem, calendarColor: Color = .blue) -> CalendarEvent? {
+    private func parseGoogleEvent(_ item: GoogleEventItem, calendarColor: Color = .blue, accountEmail: String? = nil) -> CalendarEvent? {
         guard let startDate = parseGoogleDateTime(item.start),
               let endDate = parseGoogleDateTime(item.end) else {
             return nil
@@ -462,7 +503,7 @@ final class GoogleCalendarService: ObservableObject {
         let isAllDay = item.start.dateTime == nil && item.start.date != nil
 
         let meetingURL = extractMeetingURL(from: item)
-        let attendees = item.attendees?.map { EventAttendee(email: $0.email, name: $0.displayName) } ?? []
+        let attendees = item.attendees?.map { EventAttendee(email: $0.email, name: $0.displayName, responseStatus: $0.responseStatus) } ?? []
 
         return CalendarEvent(
             id: item.id,
@@ -475,7 +516,8 @@ final class GoogleCalendarService: ObservableObject {
             attendees: attendees,
             location: item.location,
             notes: item.description,
-            isAllDay: isAllDay
+            isAllDay: isAllDay,
+            accountEmail: accountEmail
         )
     }
 

@@ -119,6 +119,45 @@ struct PopoverView: View {
                         isToday: Calendar.current.isDateInToday(viewModel.selectedDate),
                         onSelectEvent: { event in
                             viewModel.selectEvent(event)
+                        },
+                        onCreateAtTime: { date in
+                            guard LicenseManager.shared.isPro else { return }
+                            viewModel.createEventStartDate = date
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                viewModel.showCreateEvent = true
+                            }
+                        },
+                        onResizeEvent: { event, newEndDate in
+                            Task {
+                                let result = await viewModel.googleService.editEvent(
+                                    eventId: event.id,
+                                    title: event.title,
+                                    startDate: event.startDate,
+                                    endDate: newEndDate,
+                                    attendees: event.attendees
+                                )
+                                await MainActor.run {
+                                    if case .success = result {
+                                        viewModel.refreshAll()
+                                    }
+                                }
+                            }
+                        },
+                        onMoveEvent: { event, newStart, newEnd in
+                            Task {
+                                let result = await viewModel.googleService.editEvent(
+                                    eventId: event.id,
+                                    title: event.title,
+                                    startDate: newStart,
+                                    endDate: newEnd,
+                                    attendees: event.attendees
+                                )
+                                await MainActor.run {
+                                    if case .success = result {
+                                        viewModel.refreshAll()
+                                    }
+                                }
+                            }
                         }
                     )
                 }
@@ -149,6 +188,19 @@ struct PopoverView: View {
                                 viewModel.refreshAll()
                             case .error:
                                 break
+                            }
+                        }
+                    }
+                },
+                onRSVP: { event, status in
+                    Task {
+                        let result = await viewModel.googleService.rsvpEvent(
+                            eventId: event.id,
+                            status: status
+                        )
+                        await MainActor.run {
+                            if case .success = result {
+                                viewModel.refreshAll()
                             }
                         }
                     }

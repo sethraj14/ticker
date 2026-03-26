@@ -6,10 +6,13 @@ struct JoinSection: View {
     var allTimedEvents: [CalendarEvent] = []
     var onEdit: ((CalendarEvent) -> Void)? = nil
     var onDelete: ((CalendarEvent) -> Void)? = nil
+    var onRSVP: ((CalendarEvent, String) -> Void)? = nil
 
     @State private var showDeleteConfirm = false
     @State private var isDeleting = false
     @State private var deleteError: String?
+    @State private var showAttendees = false
+    @State private var rsvpInProgress = false
 
     var body: some View {
         if isToday {
@@ -41,9 +44,28 @@ struct JoinSection: View {
                                 .foregroundStyle(.white)
                                 .lineLimit(1)
 
-                            Text(event.timeRangeLabel)
-                                .font(.system(size: 11))
-                                .foregroundStyle(.white.opacity(0.4))
+                            HStack(spacing: 6) {
+                                Text(event.timeRangeLabel)
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.white.opacity(0.4))
+
+                                if !event.attendees.isEmpty {
+                                    Button {
+                                        withAnimation(.easeInOut(duration: 0.2)) {
+                                            showAttendees.toggle()
+                                        }
+                                    } label: {
+                                        HStack(spacing: 3) {
+                                            Image(systemName: "person.2.fill")
+                                                .font(.system(size: 8))
+                                            Text("\(event.attendees.count)")
+                                                .font(.system(size: 10, weight: .medium))
+                                        }
+                                        .foregroundStyle(.white.opacity(0.35))
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
                         }
 
                         Spacer(minLength: 8)
@@ -80,6 +102,16 @@ struct JoinSection: View {
                     }
                     .padding(.horizontal, 14)
                     .padding(.vertical, 12)
+
+                    // RSVP buttons (Pro + Google)
+                    if LicenseManager.shared.isPro && event.source == .google && event.accountEmail != nil {
+                        rsvpButtons(event)
+                    }
+
+                    // Attendee list (expandable)
+                    if showAttendees && !event.attendees.isEmpty {
+                        attendeeList(event)
+                    }
 
                     if showDeleteConfirm {
                         deleteConfirmationBar(event)
@@ -202,6 +234,93 @@ struct JoinSection: View {
         .padding(.horizontal, 14)
         .padding(.bottom, 10)
         .transition(.move(edge: .top).combined(with: .opacity))
+    }
+
+    // MARK: - RSVP Buttons
+
+    private func rsvpButtons(_ event: CalendarEvent) -> some View {
+        let currentStatus = event.myRSVPStatus ?? "needsAction"
+        return HStack(spacing: 8) {
+            rsvpButton("Going", status: "accepted", current: currentStatus, color: .green, event: event)
+            rsvpButton("Maybe", status: "tentative", current: currentStatus, color: .yellow, event: event)
+            rsvpButton("No", status: "declined", current: currentStatus, color: .red, event: event)
+        }
+        .padding(.horizontal, 14)
+        .padding(.bottom, 8)
+    }
+
+    private func rsvpButton(_ label: String, status: String, current: String, color: Color, event: CalendarEvent) -> some View {
+        let isActive = current == status
+        return Button {
+            guard !rsvpInProgress else { return }
+            rsvpInProgress = true
+            onRSVP?(event, status)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                rsvpInProgress = false
+            }
+        } label: {
+            Text(label)
+                .font(.system(size: 10, weight: isActive ? .bold : .medium))
+                .foregroundStyle(isActive ? .white : .white.opacity(0.5))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 5)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(isActive ? color.opacity(0.3) : .white.opacity(0.06))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .strokeBorder(isActive ? color.opacity(0.5) : .clear, lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+        .disabled(rsvpInProgress)
+        .accessibilityLabel("RSVP \(label)")
+    }
+
+    // MARK: - Attendee List
+
+    private func attendeeList(_ event: CalendarEvent) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(event.attendees, id: \.email) { attendee in
+                HStack(spacing: 8) {
+                    // Avatar circle
+                    ZStack {
+                        Circle()
+                            .fill(attendeeColor(attendee.email))
+                            .frame(width: 20, height: 20)
+                        Text(String((attendee.name ?? attendee.email).prefix(1)).uppercased())
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(.white)
+                    }
+
+                    // Name
+                    Text(attendee.name ?? attendee.email)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.white.opacity(0.7))
+                        .lineLimit(1)
+
+                    Spacer()
+
+                    // RSVP status badge
+                    if let status = attendee.responseStatus {
+                        Image(systemName: attendee.rsvpIcon)
+                            .font(.system(size: 10))
+                            .foregroundStyle(attendee.rsvpColor.opacity(0.8))
+                    }
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 4)
+            }
+        }
+        .padding(.vertical, 4)
+        .transition(.move(edge: .top).combined(with: .opacity))
+    }
+
+    private func attendeeColor(_ email: String) -> Color {
+        let colors: [Color] = [.blue, .purple, .orange, .green, .pink, .teal, .indigo]
+        let hash = abs(email.hashValue)
+        return colors[hash % colors.count]
     }
 
     // MARK: - Non-today: show day summary (event count + total meeting time)

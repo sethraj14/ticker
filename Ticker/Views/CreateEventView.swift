@@ -3,6 +3,7 @@ import SwiftUI
 struct CreateEventView: View {
     @ObservedObject var viewModel: CalendarViewModel
     var editingEvent: CalendarEvent? = nil
+    var prefilledStartDate: Date? = nil
 
     @State private var naturalInput: String = ""
     @State private var parsedEvent: ParsedEvent?
@@ -26,6 +27,7 @@ struct CreateEventView: View {
     // Guest management
     @State private var guestInput: String = ""
     @State private var guests: [EventAttendee] = []
+    @State private var guestsExpanded = false
 
     // Time input
     @State private var timeInput: String = ""
@@ -105,6 +107,11 @@ struct CreateEventView: View {
                 guests = event.attendees
                 showManualForm = true
                 timeInput = event.startDate.formatted(date: .omitted, time: .shortened)
+            } else if let prefilled = prefilledStartDate ?? viewModel.createEventStartDate {
+                startDate = prefilled
+                showManualForm = true
+                timeInput = prefilled.formatted(date: .omitted, time: .shortened)
+                viewModel.createEventStartDate = nil
             } else {
                 timeInput = startDate.formatted(date: .omitted, time: .shortened)
             }
@@ -565,23 +572,69 @@ struct CreateEventView: View {
     }
 
     private var guestChips: some View {
-        FlowLayout(spacing: 6) {
-            ForEach(guests) { guest in
-                guestChip(guest)
+        let maxVisible = 4
+        let showCollapse = guests.count > maxVisible && !guestsExpanded
+        let visibleGuests = showCollapse ? Array(guests.prefix(maxVisible)) : guests
+
+        return VStack(alignment: .leading, spacing: 6) {
+            FlowLayout(spacing: 6) {
+                ForEach(visibleGuests) { guest in
+                    guestChip(guest)
+                }
+
+                if showCollapse {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            guestsExpanded = true
+                        }
+                    } label: {
+                        Text("+\(guests.count - maxVisible) more")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.5))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(RoundedRectangle(cornerRadius: 14).fill(.white.opacity(0.06)))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .frame(maxHeight: guestsExpanded && guests.count > 6 ? 120 : .infinity)
+
+            if guestsExpanded && guests.count > maxVisible {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        guestsExpanded = false
+                    }
+                } label: {
+                    Text("Show less")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.white.opacity(0.35))
+                }
+                .buttonStyle(.plain)
             }
         }
     }
 
     private func guestChip(_ guest: EventAttendee) -> some View {
         HStack(spacing: 5) {
-            // Colored circle with first letter
-            ZStack {
-                Circle()
-                    .fill(colorForEmail(guest.email))
-                    .frame(width: 18, height: 18)
-                Text(String((guest.name ?? guest.email).prefix(1)).uppercased())
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(.white)
+            // Colored circle with first letter + RSVP overlay
+            ZStack(alignment: .bottomTrailing) {
+                ZStack {
+                    Circle()
+                        .fill(colorForEmail(guest.email))
+                        .frame(width: 18, height: 18)
+                    Text(String((guest.name ?? guest.email).prefix(1)).uppercased())
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(.white)
+                }
+
+                if let status = guest.responseStatus, status != "needsAction" {
+                    Circle()
+                        .fill(guest.rsvpColor)
+                        .frame(width: 7, height: 7)
+                        .overlay(Circle().strokeBorder(.black, lineWidth: 1))
+                        .offset(x: 2, y: 2)
+                }
             }
 
             Text(guest.name ?? guest.email)
