@@ -19,8 +19,8 @@ export default async function Home({ searchParams }: PageProps) {
   return (
     <>
       {/* Animated grid background */}
-      <div className="fixed inset-0 -z-10 opacity-50" style={{
-        backgroundImage: "linear-gradient(to right, #18181b 1px, transparent 1px), linear-gradient(to bottom, #18181b 1px, transparent 1px)",
+      <div className="fixed inset-0 -z-10 opacity-30" style={{
+        backgroundImage: "linear-gradient(to right, var(--t-grid-color) 1px, transparent 1px), linear-gradient(to bottom, var(--t-grid-color) 1px, transparent 1px)",
         backgroundSize: "40px 40px",
       }} />
 

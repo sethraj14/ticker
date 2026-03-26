@@ -118,6 +118,53 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* Ticker landing page theme tokens */
+:root {
+  --t-bg: #ffffff;
+  --t-bg-subtle: #f4f4f5;
+  --t-bg-card: #ffffff;
+  --t-bg-card-hover: #f9f9fa;
+  --t-border: #e4e4e7;
+  --t-border-hover: #00CC6A40;
+  --t-text: #18181b;
+  --t-text-secondary: #52525b;
+  --t-text-muted: #71717a;
+  --t-text-faint: #a1a1aa;
+  --t-accent: #00CC6A;
+  --t-accent-bg: #00CC6A;
+  --t-accent-text: #000000;
+  --t-accent-glow: rgba(0, 204, 106, 0.1);
+  --t-accent-subtle: rgba(0, 204, 106, 0.08);
+  --t-nav-bg: rgba(255, 255, 255, 0.85);
+  --t-nav-border: #e4e4e7;
+  --t-popover-bg: #1c1b1d;
+  --t-grid-color: #e4e4e7;
+  --t-pro-border: #00CC6A;
+}
+
+.dark {
+  --t-bg: #09090b;
+  --t-bg-subtle: rgba(9, 9, 11, 0.2);
+  --t-bg-card: #1c1b1d;
+  --t-bg-card-hover: #252527;
+  --t-border: #27272a;
+  --t-border-hover: rgba(0, 255, 136, 0.3);
+  --t-text: #ffffff;
+  --t-text-secondary: #a1a1aa;
+  --t-text-muted: #71717a;
+  --t-text-faint: #52525b;
+  --t-accent: #00FF88;
+  --t-accent-bg: #00FF88;
+  --t-accent-text: #000000;
+  --t-accent-glow: rgba(0, 255, 136, 0.15);
+  --t-accent-subtle: rgba(0, 255, 136, 0.05);
+  --t-nav-bg: rgba(9, 9, 11, 0.8);
+  --t-nav-border: rgba(39, 39, 42, 0.5);
+  --t-popover-bg: #131315;
+  --t-grid-color: #18181b;
+  --t-pro-border: #00FF88;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

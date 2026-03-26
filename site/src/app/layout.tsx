@@ -53,8 +53,11 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable} dark h-full antialiased`}>
-      <body className="min-h-full bg-[#09090b] text-zinc-100 font-sans overflow-x-hidden">
+    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable} dark h-full antialiased`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('ticker-theme');if(t==='light'){document.documentElement.classList.remove('dark')};}catch(e){}})()` }} />
+      </head>
+      <body className="min-h-full font-sans overflow-x-hidden" style={{ background: "var(--t-bg)", color: "var(--t-text)" }}>
         {children}
       </body>
     </html>
