@@ -120,6 +120,8 @@ struct CreateEventView: View {
             TextField("Team sync tomorrow 3pm 45min", text: $naturalInput)
                 .textFieldStyle(.roundedBorder)
                 .font(.system(size: 13))
+                .disableAutocorrection(true)
+                .textContentType(.none)
                 .onChange(of: naturalInput) { newValue in
                     parsedEvent = NaturalLanguageParser.parse(newValue)
                 }
@@ -255,6 +257,8 @@ struct CreateEventView: View {
                 TextField("Event title", text: $title)
                     .textFieldStyle(.roundedBorder)
                     .font(.system(size: 13))
+                    .disableAutocorrection(true)
+                    .textContentType(.none)
             }
 
             // Date & Time
