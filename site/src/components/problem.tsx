@@ -6,13 +6,12 @@ export function Problem() {
           You missed a meeting because you were deep in code.
         </p>
         <p className="mt-6 text-lg text-zinc-400 leading-relaxed">
-          We&apos;ve all been there. Tab-switching to check your calendar.
-          Mental math on when the standup starts. Forgetting to join until
-          someone pings you.
+          Tab-switching to check your calendar. Mental math on when the standup
+          starts. Opening a browser just to RSVP or create a quick meeting.
         </p>
         <p className="mt-6 text-lg text-zinc-300 font-medium leading-relaxed">
-          Ticker sits in your menu bar and counts down. When it&apos;s time,
-          one click to join.
+          Ticker sits in your menu bar — countdown, join, create, RSVP — all
+          without leaving your workflow.
         </p>
       </div>
     </section>

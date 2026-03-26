@@ -33,7 +33,7 @@ export function Hero({ isProductHunt = false }: HeroProps) {
         </h1>
 
         <p className="mt-6 text-lg text-zinc-400 md:text-xl max-w-2xl mx-auto leading-relaxed">
-          {SITE.description}
+          A beautiful menu bar calendar for macOS. Live countdown, one-click join, and full event management — create, drag, RSVP, all without leaving your workflow.
         </p>
 
         <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">

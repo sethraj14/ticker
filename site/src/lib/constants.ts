@@ -2,7 +2,7 @@ export const SITE = {
   name: "Ticker",
   tagline: "Your next meeting, always in sight.",
   description:
-    "A beautiful menu bar calendar for macOS that counts down to your next meeting. One click to join. Free forever, Pro for power users.",
+    "A beautiful menu bar calendar for macOS. Live countdown, one-click join, and full event management — create, drag, RSVP, all from your menu bar. Free forever, Pro for power users.",
   url: "https://getticker.app",
   github: "https://github.com/sethraj14/ticker",
   twitter: "https://x.com/rajdeepseth",
@@ -15,71 +15,101 @@ export const PRICING = {
     name: "Free",
     price: "$0",
     description:
-      "Everything you need to stay on top of your next meeting.",
+      "A beautiful read-only calendar that keeps you on time.",
     features: [
       "Menu bar countdown timer",
       "One-click meeting join",
-      "Google Calendar day view",
-      "Single account",
+      "Google Calendar day timeline",
+      "Event details & attendee list",
+      "RSVP status on events",
+      "First-launch onboarding",
     ],
   },
   pro: {
     name: "Pro",
     price: "$7.99",
     priceNote: "One-time purchase. No subscription.",
-    description: "For power users who live in their calendar.",
+    description: "Full calendar management from your menu bar.",
     features: [
       "Everything in Free",
+      "Create, edit & delete events",
+      "NLP quick-add (\"Standup 3pm 45m\")",
+      "Click or drag to create on timeline",
+      "Drag to resize & move events",
+      "RSVP — respond Going/Maybe/No",
+      "Guest management with autocomplete",
       "Multiple Google accounts",
       "Apple Calendar sync",
-      "Native macOS notifications",
-      "Day navigation (browse past/future)",
-      "Customizable appearance",
+      "Day navigation (past/future)",
+      "Smart notifications",
     ],
   },
 } as const
 
 export const FEATURES = [
+  // Free features
   {
     title: "Live Countdown",
     description:
-      "See exactly how long until your next meeting — down to the second. No more mental math.",
+      "See exactly how long until your next meeting — down to the second. Always visible in your menu bar.",
     icon: "Timer",
     isPro: false,
   },
   {
     title: "One-Click Join",
     description:
-      "Google Meet, Zoom, Teams — click the button, you're in. No hunting for links.",
+      "Google Meet, Zoom, Teams — click the button, you're in. No hunting for links in emails.",
     icon: "Video",
     isPro: false,
   },
   {
-    title: "Beautiful Day View",
+    title: "Beautiful Day Timeline",
     description:
-      "A Google Calendar-style timeline right in your menu bar. See your entire day at a glance.",
+      "A Google Calendar-style timeline right in your menu bar. Color-coded events, overlapping columns, now-line.",
     icon: "Calendar",
     isPro: false,
   },
+  // Pro features
   {
-    title: "Multiple Accounts",
+    title: "Create Events Instantly",
     description:
-      "Work + personal calendars, all in one place. No switching between accounts.",
+      "Click any empty slot to create. Or type \"Team standup 3pm 45m\" — NLP parses it automatically. Drag on the timeline to set duration visually.",
+    icon: "Plus",
+    isPro: true,
+  },
+  {
+    title: "Drag to Resize & Move",
+    description:
+      "Drag the bottom edge to resize. Grab the color bar to move. Smooth 60fps, snaps to 15-min grid. Just like Google Calendar.",
+    icon: "Move",
+    isPro: true,
+  },
+  {
+    title: "RSVP from Menu Bar",
+    description:
+      "See who's accepted, declined, or tentative — right on the event. Tap Going, Maybe, or No without opening a browser.",
+    icon: "CheckCircle",
+    isPro: true,
+  },
+  {
+    title: "Guest Management",
+    description:
+      "Add attendees by email with autocomplete from recent contacts. See each guest's RSVP status at a glance.",
     icon: "Users",
     isPro: true,
   },
   {
-    title: "Smart Notifications",
+    title: "Multiple Accounts",
     description:
-      "Native macOS notifications with a 'Join Meeting' button. Configurable lead times.",
-    icon: "Bell",
+      "Work + personal calendars in one view. Add Apple Calendar alongside Google. One unified timeline.",
+    icon: "Layers",
     isPro: true,
   },
   {
-    title: "Apple Calendar Sync",
+    title: "Day Navigation & Notifications",
     description:
-      "See events from your Apple Calendar alongside Google. One unified timeline.",
-    icon: "Repeat",
+      "Browse any day — past or future. Get native macOS notifications before meetings with configurable lead times.",
+    icon: "Bell",
     isPro: true,
   },
 ] as const
@@ -88,6 +118,14 @@ export const FAQ = [
   {
     q: "Is it really a one-time purchase?",
     a: "Yes. Pay once, use forever. No subscriptions, no annual renewals. Future updates included.",
+  },
+  {
+    q: "What can I do with the free version?",
+    a: "Everything you need to stay on time: live countdown, one-click meeting join, full day timeline with event details and attendee lists. Free feels complete, not crippled.",
+  },
+  {
+    q: "What does Pro unlock?",
+    a: "Full calendar management — create, edit, delete events. NLP quick-add, drag-to-create, drag-to-resize, drag-to-move, RSVP responses, guest management, multiple accounts, Apple Calendar, and day navigation.",
   },
   {
     q: "Does it work offline?",
@@ -102,8 +140,8 @@ export const FAQ = [
     a: "Full refund within 14 days, no questions asked. Contact us and we'll process it immediately.",
   },
   {
-    q: "Will there be an iOS version?",
-    a: "We're considering it! Sign up for updates to be the first to know.",
+    q: "Can I create and manage events?",
+    a: "Yes! With Pro, you can create events via NLP or manual form, edit times and details, manage guest lists, RSVP, and drag events to resize or reschedule — all from your menu bar.",
   },
   {
     q: "Is it on the Mac App Store?",
