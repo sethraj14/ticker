@@ -74,7 +74,6 @@ struct DayTimelineView: View {
 
     // Drag-to-move state
     @State private var movingEventID: String? = nil
-    @State private var moveOffsetY: CGFloat = 0
     @State private var moveCurrentY: CGFloat? = nil
 
     var body: some View {
@@ -273,7 +272,6 @@ struct DayTimelineView: View {
                                         let newEnd = yToDate(newBottomY)
                                         if newEnd > le.event.startDate {
                                             onResizeEvent?(le.event, newEnd)
-                                            // Keep visual state until events refresh (optimistic UI)
                                             return
                                         }
                                     }
@@ -290,9 +288,51 @@ struct DayTimelineView: View {
                         }
                 }
             }
+            .overlay(alignment: .topLeading) {
+                // Drag handle to move event (Pro + Google only)
+                if le.event.source == .google && LicenseManager.shared.isPro {
+                    Image(systemName: "line.3.horizontal")
+                        .font(.system(size: 7, weight: .bold))
+                        .foregroundStyle(.white.opacity(isMoving ? 0.6 : 0.15))
+                        .frame(width: 16, height: 12)
+                        .contentShape(Rectangle())
+                        .gesture(
+                            DragGesture(minimumDistance: 2)
+                                .onChanged { value in
+                                    if movingEventID == nil {
+                                        movingEventID = le.event.id
+                                        NSCursor.closedHand.push()
+                                    }
+                                    moveCurrentY = topY + value.translation.height
+                                }
+                                .onEnded { _ in
+                                    NSCursor.pop()
+                                    if let newTopY = moveCurrentY {
+                                        let snappedY = snapToGrid(newTopY)
+                                        moveCurrentY = snappedY
+                                        let newStart = yToDate(snappedY)
+                                        let duration = le.event.endDate.timeIntervalSince(le.event.startDate)
+                                        let newEnd = newStart.addingTimeInterval(duration)
+                                        onMoveEvent?(le.event, newStart, newEnd)
+                                        return
+                                    }
+                                    movingEventID = nil
+                                    moveCurrentY = nil
+                                }
+                        )
+                        .onHover { hovering in
+                            if hovering {
+                                NSCursor.openHand.push()
+                            } else {
+                                NSCursor.pop()
+                            }
+                        }
+                        .padding(.top, 2)
+                        .padding(.leading, 4)
+                }
+            }
             .frame(width: colWidth - 2, height: displayHeight)
             .timelinePosition(x: leftX, y: displayY)
-            .gesture(moveGesture(for: le.event, topY: topY))
             .shadow(color: isMoving ? .black.opacity(0.3) : .clear, radius: 4, y: 2)
             .zIndex(isMoving || isResizing ? 10 : 0)
         }
@@ -357,42 +397,6 @@ struct DayTimelineView: View {
     }
 
     // MARK: - Helpers
-
-    /// Long-press + drag gesture for moving events
-    private func moveGesture(for event: CalendarEvent, topY: CGFloat) -> some Gesture {
-        LongPressGesture(minimumDuration: 0.15)
-            .sequenced(before: DragGesture(minimumDistance: 1))
-            .onChanged { value in
-                guard event.source == .google && LicenseManager.shared.isPro else { return }
-                switch value {
-                case .second(true, let drag):
-                    if let drag {
-                        if movingEventID == nil {
-                            movingEventID = event.id
-                            NSCursor.closedHand.push()
-                        }
-                        // Smooth movement during drag (no snapping)
-                        moveCurrentY = topY + drag.translation.height
-                    }
-                default: break
-                }
-            }
-            .onEnded { _ in
-                NSCursor.pop()
-                guard event.source == .google && LicenseManager.shared.isPro else { return }
-                if let newTopY = moveCurrentY {
-                    let snappedY = snapToGrid(newTopY)
-                    moveCurrentY = snappedY
-                    let newStart = yToDate(snappedY)
-                    let duration = event.endDate.timeIntervalSince(event.startDate)
-                    let newEnd = newStart.addingTimeInterval(duration)
-                    onMoveEvent?(event, newStart, newEnd)
-                    return
-                }
-                movingEventID = nil
-                moveCurrentY = nil
-            }
-    }
 
     private func resetDragState() {
         dragStartY = nil
