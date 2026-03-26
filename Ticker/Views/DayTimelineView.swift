@@ -122,8 +122,8 @@ struct DayTimelineView: View {
             let topY = timeToY(le.event.startDate)
             let bottomY = timeToY(le.event.endDate)
             let height = max(bottomY - topY, 20)
-            let colWidth = eventAreaWidth / CGFloat(le.totalColumns)
-            let leftX = lineStart + colWidth * CGFloat(le.column)
+            let colWidth = (eventAreaWidth / CGFloat(le.totalColumns)).rounded(.down)
+            let leftX = (lineStart + colWidth * CGFloat(le.column)).rounded(.down)
             let isSelected = selectedEventID == le.event.id
 
             MeetingBlockView(event: le.event, isSelected: isSelected) {
