@@ -27,6 +27,10 @@ struct CreateEventView: View {
     @State private var guestInput: String = ""
     @State private var guests: [EventAttendee] = []
 
+    // Custom duration
+    @State private var showCustomDuration = false
+    @State private var customDurationText = ""
+
     // Delete confirmation (edit mode)
     @State private var showDeleteConfirm = false
     @State private var isDeleting = false
@@ -376,11 +380,39 @@ struct CreateEventView: View {
                     .font(.system(size: 11))
                     .foregroundStyle(.white.opacity(0.4))
 
-                HStack(spacing: 6) {
-                    ForEach([15, 30, 60, 120], id: \.self) { mins in
-                        chipButton(durationLabel(mins), isSelected: selectedDuration == mins) {
+                HStack(spacing: 5) {
+                    ForEach([15, 30, 45, 60, 90, 120], id: \.self) { mins in
+                        chipButton(durationLabel(mins), isSelected: selectedDuration == mins && !showCustomDuration) {
                             selectedDuration = mins
+                            showCustomDuration = false
                         }
+                    }
+
+                    // Custom duration toggle
+                    chipButton("...", isSelected: showCustomDuration) {
+                        showCustomDuration.toggle()
+                    }
+                }
+
+                // Custom duration input
+                if showCustomDuration {
+                    HStack(spacing: 6) {
+                        TextField("", text: $customDurationText)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.system(size: 12, design: .monospaced))
+                            .frame(width: 50)
+                            .disableAutocorrection(true)
+                            .onSubmit { applyCustomDuration() }
+
+                        Text("minutes")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.white.opacity(0.35))
+
+                        Button("Set") { applyCustomDuration() }
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(.blue)
+                            .buttonStyle(.plain)
+                            .disabled(Int(customDurationText) == nil)
                     }
                 }
             }
@@ -400,6 +432,11 @@ struct CreateEventView: View {
         isAM = h < 12
         selectedHour = h == 0 ? 12 : (h > 12 ? h - 12 : h)
         selectedMinute = m
+    }
+
+    private func applyCustomDuration() {
+        guard let mins = Int(customDurationText), mins > 0, mins <= 480 else { return }
+        selectedDuration = mins
     }
 
     private func syncTimeToDate() {
