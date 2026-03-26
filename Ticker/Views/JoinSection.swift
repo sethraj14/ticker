@@ -255,9 +255,7 @@ struct JoinSection: View {
             guard !rsvpInProgress else { return }
             rsvpInProgress = true
             onRSVP?(event, status)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                rsvpInProgress = false
-            }
+            // rsvpInProgress is reset when the view re-renders after refreshAll()
         } label: {
             Text(label)
                 .font(.system(size: 10, weight: isActive ? .bold : .medium))
@@ -303,7 +301,7 @@ struct JoinSection: View {
                     Spacer()
 
                     // RSVP status badge
-                    if let status = attendee.responseStatus {
+                    if attendee.responseStatus != nil {
                         Image(systemName: attendee.rsvpIcon)
                             .font(.system(size: 10))
                             .foregroundStyle(attendee.rsvpColor.opacity(0.8))

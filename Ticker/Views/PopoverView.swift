@@ -117,6 +117,7 @@ struct PopoverView: View {
                         events: timedEvents,
                         selectedEventID: viewModel.selectedEvent?.id,
                         isToday: Calendar.current.isDateInToday(viewModel.selectedDate),
+                        selectedDate: viewModel.selectedDate,
                         onSelectEvent: { event in
                             viewModel.selectEvent(event)
                         },

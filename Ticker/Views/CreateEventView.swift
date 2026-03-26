@@ -111,10 +111,10 @@ struct CreateEventView: View {
                 startDate = prefilled
                 showManualForm = true
                 timeInput = prefilled.formatted(date: .omitted, time: .shortened)
-                viewModel.createEventStartDate = nil
             } else {
                 timeInput = startDate.formatted(date: .omitted, time: .shortened)
             }
+            viewModel.createEventStartDate = nil
             syncDateToTime()
         }
     }

@@ -47,6 +47,7 @@ struct DayTimelineView: View {
     let events: [CalendarEvent]
     let selectedEventID: String?
     let isToday: Bool
+    let selectedDate: Date
     let onSelectEvent: (CalendarEvent) -> Void
     var onCreateAtTime: ((Date) -> Void)? = nil
     var onResizeEvent: ((CalendarEvent, Date) -> Void)? = nil
@@ -122,6 +123,8 @@ struct DayTimelineView: View {
                             DragGesture(minimumDistance: 5)
                                 .onChanged { value in
                                     guard LicenseManager.shared.isPro else { return }
+                                    // Don't start create drag while resize/move is active
+                                    guard resizingEventID == nil && movingEventID == nil else { return }
                                     let y = snapToGrid(value.startLocation.y)
                                     if dragStartY == nil {
                                         // Check we're not on an event
@@ -151,6 +154,7 @@ struct DayTimelineView: View {
                         )
                         .onTapGesture { location in
                             guard LicenseManager.shared.isPro else { return }
+                            guard resizingEventID == nil && movingEventID == nil else { return }
                             if !isPointOnEvent(y: location.y) {
                                 let snappedY = snapToGrid(location.y)
                                 let date = yToDate(snappedY)
@@ -375,15 +379,14 @@ struct DayTimelineView: View {
         return ((CGFloat(h) + CGFloat(m) / 60.0) * hourHeight).rounded(.down)
     }
 
-    /// Inverse of timeToY — convert Y coordinate back to a Date on selectedDate's day
+    /// Inverse of timeToY — convert Y coordinate back to a Date on the displayed day
     private func yToDate(_ y: CGFloat) -> Date {
         let fractionalHour = y / hourHeight
         let hour = Int(fractionalHour)
         let minute = Int((fractionalHour - CGFloat(hour)) * 60)
         var cal = Calendar.current
         cal.timeZone = .current
-        let baseDate = isToday ? Date.now : events.first?.startDate ?? Date.now
-        return cal.date(bySettingHour: max(0, min(23, hour)), minute: max(0, min(59, minute)), second: 0, of: baseDate) ?? baseDate
+        return cal.date(bySettingHour: max(0, min(23, hour)), minute: max(0, min(59, minute)), second: 0, of: selectedDate) ?? selectedDate
     }
 
     /// Snap Y to nearest 15-minute grid line

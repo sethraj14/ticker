@@ -327,23 +327,54 @@ final class GoogleCalendarService: ObservableObject {
             return .error("Could not refresh token. Try removing and re-adding your account.")
         }
 
-        let url = URL(string: "\(calendarBaseURL)/calendars/primary/events/\(eventId)")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "PATCH"
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let eventURL = URL(string: "\(calendarBaseURL)/calendars/primary/events/\(eventId)")!
 
-        let body: [String: Any] = [
-            "attendees": [["email": account.email, "responseStatus": status]]
-        ]
+        // Step 1: GET the current event to read full attendee list
+        var getRequest = URLRequest(url: eventURL)
+        getRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
+        let currentAttendees: [[String: Any]]
+        do {
+            let (getData, getResponse) = try await URLSession.shared.data(for: getRequest)
+            guard let http = getResponse as? HTTPURLResponse, (200...299).contains(http.statusCode),
+                  let json = try? JSONSerialization.jsonObject(with: getData) as? [String: Any] else {
+                return .error("Could not fetch event for RSVP.")
+            }
+            currentAttendees = (json["attendees"] as? [[String: Any]]) ?? []
+        } catch {
+            return .error("Network error: \(error.localizedDescription)")
+        }
+
+        // Step 2: Update only the current user's responseStatus in the full list
+        var updatedAttendees = currentAttendees
+        var found = false
+        for i in updatedAttendees.indices {
+            if let email = updatedAttendees[i]["email"] as? String,
+               email.lowercased() == account.email.lowercased() {
+                updatedAttendees[i]["responseStatus"] = status
+                found = true
+                break
+            }
+        }
+        if !found {
+            // User not in attendees — add them
+            updatedAttendees.append(["email": account.email, "responseStatus": status])
+        }
+
+        // Step 3: PATCH with the complete attendee list
+        var patchRequest = URLRequest(url: eventURL)
+        patchRequest.httpMethod = "PATCH"
+        patchRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        patchRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let body: [String: Any] = ["attendees": updatedAttendees]
         guard let jsonData = try? JSONSerialization.data(withJSONObject: body) else {
             return .error("Failed to build request.")
         }
-        request.httpBody = jsonData
+        patchRequest.httpBody = jsonData
 
         do {
-            let (data, response) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await URLSession.shared.data(for: patchRequest)
             if let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) {
                 return .success
             }
